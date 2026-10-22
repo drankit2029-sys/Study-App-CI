@@ -68,8 +68,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
     implementation("androidx.core:core-ktx:1.17.0")
 
-    implementation("androidx.navigation:navigation-compose:2.10.2")
-    implementation("androidx.hilt:hilt-navigation-compose:1.4.0")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
     implementation("com.google.dagger:hilt-android:2.60.1")
     ksp("com.google.dagger:hilt-android-compiler:2.60.1")
 

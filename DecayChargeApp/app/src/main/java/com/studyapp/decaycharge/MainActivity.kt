@@ -23,8 +23,8 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
         )
         super.onCreate(savedInstanceState)
-        val windowSizeClass = calculateWindowSizeClass(this)
         setContent {
+            val windowSizeClass = calculateWindowSizeClass(this@MainActivity)
             CompositionLocalProvider(LocalWindowSizeClass provides windowSizeClass) {
                 DecayChargeTheme {
                     DecayChargeApp()

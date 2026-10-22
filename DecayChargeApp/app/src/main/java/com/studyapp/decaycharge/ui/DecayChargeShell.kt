@@ -74,11 +74,13 @@ import com.studyapp.decaycharge.ui.screens.SyllabusScreen
 import com.studyapp.decaycharge.ui.screens.TriageScreen
 import com.studyapp.decaycharge.ui.theme.Border
 import com.studyapp.decaycharge.ui.theme.Forest
+import com.studyapp.decaycharge.ui.theme.Ink
 import com.studyapp.decaycharge.ui.theme.Ivory
 import com.studyapp.decaycharge.ui.theme.MintLight
 import com.studyapp.decaycharge.ui.theme.Muted
 import com.studyapp.decaycharge.ui.theme.Paper
 import com.studyapp.decaycharge.ui.theme.Stone
+import com.studyapp.decaycharge.ui.theme.StoneLight
 import com.studyapp.decaycharge.ui.theme.ZoneGreen
 
 @Composable

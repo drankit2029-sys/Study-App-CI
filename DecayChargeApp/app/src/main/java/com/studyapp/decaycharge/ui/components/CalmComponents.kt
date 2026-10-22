@@ -63,6 +63,7 @@ import com.studyapp.decaycharge.ui.theme.Mint
 import com.studyapp.decaycharge.ui.theme.Muted
 import com.studyapp.decaycharge.ui.theme.MutedLight
 import com.studyapp.decaycharge.ui.theme.Paper
+import com.studyapp.decaycharge.ui.theme.Parchment
 import com.studyapp.decaycharge.ui.theme.ShadowWarm
 import com.studyapp.decaycharge.ui.theme.Stone
 import com.studyapp.decaycharge.ui.theme.StoneLight
