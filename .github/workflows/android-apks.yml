@@ -1,4 +1,4 @@
-name: Android Debug APK
+name: Android Debug and Release APKs
 
 on:
   push:
@@ -11,12 +11,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-debug-${{ github.ref }}
+  group: android-apks-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-debug-apk:
-    name: Build debug APK
+  build-apks:
+    name: Build debug and release APKs
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -50,14 +50,22 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build debug APK
+      - name: Build debug and release APKs
         working-directory: App/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
           name: study-app-debug-apk
           path: App/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: study-app-release-apk
+          path: App/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
