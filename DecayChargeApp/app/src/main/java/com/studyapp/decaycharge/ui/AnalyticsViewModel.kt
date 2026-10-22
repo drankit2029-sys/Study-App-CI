@@ -2,7 +2,7 @@ package com.studyapp.decaycharge.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.studyapp.decaycharge.data.repository.StudyRepository
+import com.studyapp.decaycharge.data.repository.TriageRepository
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChapterStatus
 import com.studyapp.decaycharge.model.Subject
@@ -13,7 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 data class AnalyticsUiState(
@@ -28,24 +28,24 @@ data class AnalyticsUiState(
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
-    repository: StudyRepository,
+    repository: TriageRepository,
 ) : ViewModel() {
-    val uiState: StateFlow<AnalyticsUiState> = combine(
-        repository.subjects,
-        repository.chapters,
-    ) { subjects, chapters ->
-        val active = chapters.filter { it.status == ChapterStatus.ACTIVE }
-        AnalyticsUiState(
-            readiness = chapters.weightedReadiness(),
-            chapters = chapters,
-            subjects = subjects,
-            summaries = chapters.toSubjectSummaries(subjects),
-            averageStabilityDays = if (active.isEmpty()) 0f
-            else active.map { it.stabilityDays }.average().toFloat(),
-            totalReviewCount = chapters.sumOf { it.reviewCount },
-            isLoading = false,
-        )
-    }.stateIn(
+    val uiState: StateFlow<AnalyticsUiState> = repository.content
+        .map { content ->
+            val subjects = content.subjects
+            val chapters = content.chapters
+            val active = chapters.filter { it.status == ChapterStatus.ACTIVE }
+            AnalyticsUiState(
+                readiness = chapters.weightedReadiness(subjects),
+                chapters = chapters,
+                subjects = subjects,
+                summaries = chapters.toSubjectSummaries(subjects),
+                averageStabilityDays = if (active.isEmpty()) 0f
+                else active.map { it.stabilityDays }.average().toFloat(),
+                totalReviewCount = chapters.sumOf { it.reviewCount },
+                isLoading = false,
+            )
+        }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = AnalyticsUiState(),

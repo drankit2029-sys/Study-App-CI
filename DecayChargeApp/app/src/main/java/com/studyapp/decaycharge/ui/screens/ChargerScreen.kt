@@ -64,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.studyapp.decaycharge.domain.DecayCalculator
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChargeMode
 import com.studyapp.decaycharge.model.Zone
@@ -184,7 +185,7 @@ fun ChargerScreen(
                                 chapter = chapter,
                                 onSelectRating = viewModel::selectRating,
                                 onSave = {
-                                    if (viewModel.saveCompletedCharge()) onBack()
+                                    viewModel.saveCompletedCharge(onBack)
                                 },
                             )
                         } else {
@@ -222,7 +223,7 @@ fun ChargerScreen(
                             chapter = chapter,
                             onSelectRating = viewModel::selectRating,
                             onSave = {
-                                if (viewModel.saveCompletedCharge()) onBack()
+                                viewModel.saveCompletedCharge(onBack)
                             },
                         )
                     } else {
@@ -524,7 +525,7 @@ private fun ChargeStage(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                StageMetric(label = "MODE", value = if (state.mode == ChargeMode.DEEP) "Deep" else "Top-Up")
+                StageMetric(label = "MODE", value = if (state.mode == ChargeMode.DEEP_CHARGE) "Deep" else "Top-Up")
                 StageMetric(label = "STABILITY", value = "${"%.1f".format(chapter.stabilityDays)}d")
                 StageMetric(label = "TARGET", value = "${state.mode.targetMinutes(chapter)}m")
             }
@@ -589,7 +590,7 @@ private fun SetupPanel(
                     state.isComplete -> "Charge complete"
                     state.isForThisChapter && running -> "Pause charge"
                     state.isForThisChapter -> "Resume charge"
-                    else -> "Begin ${if (state.mode == ChargeMode.DEEP) "deep" else "top-up"} charge"
+                    else -> "Begin ${if (state.mode == ChargeMode.DEEP_CHARGE) "deep" else "top-up"} charge"
                 },
                 onClick = onToggleTimer,
                 leadingIcon = if (running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
@@ -649,9 +650,9 @@ private fun ModeSelector(
         ModeOption(
             label = "Deep charge",
             caption = "Full target",
-            selected = mode == ChargeMode.DEEP,
+            selected = mode == ChargeMode.DEEP_CHARGE,
             enabled = enabled,
-            onClick = { onMode(ChargeMode.DEEP) },
+            onClick = { onMode(ChargeMode.DEEP_CHARGE) },
             modifier = Modifier.weight(1f),
         )
         ModeOption(
@@ -774,10 +775,18 @@ private fun RatingPanel(
     onSave: () -> Unit,
 ) {
     val progress = state.active?.progress ?: 1f
+    val batteryBefore = state.active?.startBattery ?: chapter.battery
+    fun projectedStability(rating: Int): Float = DecayCalculator.stabilityAfterReview(
+        oldStabilityDays = chapter.stabilityDays,
+        reviewCount = chapter.reviewCount,
+        recallRating = rating,
+        batteryBefore = batteryBefore,
+        chargeRatio = progress,
+    )
     val ratings = listOf(
-        Triple(1, "Hard", projectedStability(chapter, 1, progress)),
-        Triple(2, "Medium", projectedStability(chapter, 2, progress)),
-        Triple(3, "Easy", projectedStability(chapter, 3, progress)),
+        Triple(1, "Hard", projectedStability(1)),
+        Triple(2, "Medium", projectedStability(2)),
+        Triple(3, "Easy", projectedStability(3)),
     )
     CalmCard(
         modifier = Modifier.fillMaxWidth(),
@@ -1015,21 +1024,6 @@ private fun MissingChapter() {
 private fun ChargeMode.targetMinutes(chapter: Chapter): Int =
     if (this == ChargeMode.QUICK_TOP_UP) 15 else chapter.targetMinutes
 
-private fun projectedStability(chapter: Chapter, rating: Int, ratio: Float): Float {
-    if (chapter.reviewCount == 0) {
-        return when (rating) {
-            1 -> 2f
-            2 -> 3f
-            else -> 4.5f
-        }
-    }
-    val old = chapter.stabilityDays
-    if (chapter.battery <= 5f && rating == 1) return max(2f, old * 0.5f)
-    if (rating == 1) return max(1.8f, old * 0.85f)
-    val multiplier = if (rating == 2) 1.6f else 2.2f
-    val timing = if (chapter.battery > 80f) 0.35f else 1f
-    return min(180f, old * (1f + (multiplier - 1f) * max(0.25f, ratio) * timing))
-}
 
 private fun formatClock(totalSeconds: Int): String {
     val safe = totalSeconds.coerceAtLeast(0)

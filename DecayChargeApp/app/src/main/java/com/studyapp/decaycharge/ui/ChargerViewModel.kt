@@ -3,9 +3,12 @@ package com.studyapp.decaycharge.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.studyapp.decaycharge.data.repository.StudyRepository
+import com.studyapp.decaycharge.data.repository.CompletedCharge
+import com.studyapp.decaycharge.data.repository.TriageRepository
 import com.studyapp.decaycharge.domain.ActiveChargeController
 import com.studyapp.decaycharge.domain.ActiveChargeState
+import com.studyapp.decaycharge.domain.AppClock
+import com.studyapp.decaycharge.domain.DecayCalculator
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChargeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,15 +20,17 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class ChargerUiState(
     val chapter: Chapter? = null,
-    val mode: ChargeMode = ChargeMode.DEEP,
+    val mode: ChargeMode = ChargeMode.DEEP_CHARGE,
     val note: String = "",
     val active: ActiveChargeState? = null,
     val showBackSheet: Boolean = false,
     val showDiscardDialog: Boolean = false,
     val selectedRating: Int? = null,
+    val isSaving: Boolean = false,
 ) {
     val isForThisChapter: Boolean
         get() = active != null && chapter != null && active.chapterId == chapter.id
@@ -42,24 +47,25 @@ data class ChargerUiState(
 }
 
 private data class ChargerControls(
-    val mode: ChargeMode = ChargeMode.DEEP,
+    val mode: ChargeMode = ChargeMode.DEEP_CHARGE,
     val note: String = "",
+    val noteEdited: Boolean = false,
     val showBackSheet: Boolean = false,
     val showDiscardDialog: Boolean = false,
     val selectedRating: Int? = null,
+    val isSaving: Boolean = false,
 )
 
 @HiltViewModel
 class ChargerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    repository: StudyRepository,
+    private val repository: TriageRepository,
     private val controller: ActiveChargeController,
+    private val clock: AppClock,
 ) : ViewModel() {
     private val chapterId: Long = checkNotNull(savedStateHandle["chapterId"])
-    private val chapter: Chapter? = repository.chapter(chapterId)
-    private val controls = MutableStateFlow(
-        ChargerControls(note = chapter?.note.orEmpty()),
-    )
+    private val chapterFlow = repository.chapter(chapterId)
+    private val controls = MutableStateFlow(ChargerControls())
     private val messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
 
     val snackbarMessages: SharedFlow<String> = messages
@@ -67,23 +73,22 @@ class ChargerViewModel @Inject constructor(
     val uiState: StateFlow<ChargerUiState> = combine(
         controls,
         controller.state,
-    ) { state, active ->
+        chapterFlow,
+    ) { state, active, chapter ->
         ChargerUiState(
             chapter = chapter,
             mode = if (active?.chapterId == chapterId) active.mode else state.mode,
-            note = state.note,
+            note = if (state.noteEdited) state.note else chapter?.note.orEmpty(),
             active = active,
             showBackSheet = state.showBackSheet,
             showDiscardDialog = state.showDiscardDialog,
             selectedRating = state.selectedRating,
+            isSaving = state.isSaving,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = ChargerUiState(
-            chapter = chapter,
-            note = chapter?.note.orEmpty(),
-        ),
+        initialValue = ChargerUiState(),
     )
 
     fun setMode(mode: ChargeMode) {
@@ -92,7 +97,7 @@ class ChargerViewModel @Inject constructor(
     }
 
     fun setNote(note: String) {
-        controls.value = controls.value.copy(note = note)
+        controls.value = controls.value.copy(note = note, noteEdited = true)
     }
 
     fun toggleTimer() {
@@ -172,13 +177,62 @@ class ChargerViewModel @Inject constructor(
         controls.value = controls.value.copy(selectedRating = rating)
     }
 
-    fun saveCompletedCharge(): Boolean {
-        if (uiState.value.selectedRating == null) {
-            messages.tryEmit("Choose a recall rating before saving.")
-            return false
+    fun saveCompletedCharge(onSaved: () -> Unit) {
+        val current = uiState.value
+        val chapter = current.chapter ?: return
+        val active = current.active
+        if (active == null || active.chapterId != chapterId || !active.isComplete) {
+            messages.tryEmit("Complete this charge before saving.")
+            return
         }
-        controller.clear()
-        controls.value = controls.value.copy(selectedRating = null)
-        return true
+        if (current.isSaving) return
+        val rating = current.selectedRating
+        if (rating == null) {
+            messages.tryEmit("Choose a recall rating before saving.")
+            return
+        }
+
+        val elapsedMinutes = active.elapsedSeconds / 60f
+        val targetMinutes = (active.targetSeconds / 60).coerceAtLeast(1)
+        val batteryAfter = DecayCalculator.rechargedBattery(
+            currentBattery = active.startBattery,
+            elapsedMinutes = elapsedMinutes,
+            targetMinutes = targetMinutes,
+        )
+        val completedCharge = CompletedCharge(
+            chapterId = chapterId,
+            mode = active.mode,
+            startedAtEpochMs = active.startedAtEpochMs,
+            endedAtEpochMs = clock.nowEpochMs(),
+            durationMinutes = (active.elapsedSeconds / 60).coerceAtLeast(1),
+            batteryBefore = active.startBattery,
+            batteryAfter = batteryAfter,
+            stabilityBefore = chapter.stabilityDays,
+            stabilityAfter = DecayCalculator.stabilityAfterReview(
+                oldStabilityDays = chapter.stabilityDays,
+                reviewCount = chapter.reviewCount,
+                recallRating = rating,
+                batteryBefore = active.startBattery,
+                chargeRatio = active.progress,
+            ),
+            recallRating = rating,
+            note = current.note.trim().takeIf { it.isNotEmpty() },
+        )
+
+        controls.value = controls.value.copy(isSaving = true)
+        viewModelScope.launch {
+            val saved = repository.saveCompletedCharge(completedCharge)
+            if (saved) {
+                controller.clear()
+                controls.value = controls.value.copy(
+                    selectedRating = null,
+                    isSaving = false,
+                )
+                onSaved()
+            } else {
+                controls.value = controls.value.copy(isSaving = false)
+                messages.tryEmit("This charge could not be saved. Please try again.")
+            }
+        }
     }
 }

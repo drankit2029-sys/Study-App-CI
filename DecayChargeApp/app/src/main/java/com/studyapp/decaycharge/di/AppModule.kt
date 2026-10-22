@@ -7,8 +7,8 @@ import com.studyapp.decaycharge.data.local.CryoFreezeDao
 import com.studyapp.decaycharge.data.local.DecayChargeDatabase
 import com.studyapp.decaycharge.data.local.StudySessionDao
 import com.studyapp.decaycharge.data.local.SubjectDao
-import com.studyapp.decaycharge.data.repository.OfflineStudyRepository
-import com.studyapp.decaycharge.data.repository.StudyRepository
+import com.studyapp.decaycharge.data.repository.OfflineTriageRepository
+import com.studyapp.decaycharge.data.repository.TriageRepository
 import com.studyapp.decaycharge.domain.AppClock
 import com.studyapp.decaycharge.domain.SystemAppClock
 import dagger.Binds
@@ -28,7 +28,7 @@ abstract class AppBindings {
 
     @Binds
     @Singleton
-    abstract fun bindStudyRepository(repository: OfflineStudyRepository): StudyRepository
+    abstract fun bindTriageRepository(repository: OfflineTriageRepository): TriageRepository
 }
 
 @Module

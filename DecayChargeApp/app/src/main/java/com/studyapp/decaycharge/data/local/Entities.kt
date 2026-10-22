@@ -1,19 +1,21 @@
 package com.studyapp.decaycharge.data.local
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import com.studyapp.decaycharge.model.ChapterStatus
+import com.studyapp.decaycharge.model.ChargeMode
 
 @Entity(tableName = "subjects")
 data class SubjectEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val colorHex: String,
-    val examWeight: Float = 1f,
-    val sortOrder: Int = 0,
+    @ColumnInfo(defaultValue = "1.0") val examWeight: Float = 1f,
+    @ColumnInfo(defaultValue = "0") val sortOrder: Int = 0,
     val createdAtEpochMs: Long,
 )
 
@@ -36,12 +38,12 @@ data class ChapterEntity(
     val title: String,
     val status: ChapterStatus,
     val difficultyWeight: Float = 1f,
-    val targetMinutes: Int = 45,
+    @ColumnInfo(defaultValue = "45") val targetMinutes: Int = 45,
     val lastChargedAtEpochMs: Long? = null,
-    val lastBatteryLevel: Float = 0f,
-    val stabilityDays: Float = 3f,
-    val reviewCount: Int = 0,
-    val totalMinutesStudied: Int = 0,
+    @ColumnInfo(defaultValue = "0.0") val lastBatteryLevel: Float = 0f,
+    @ColumnInfo(defaultValue = "3.0") val stabilityDays: Float = 3f,
+    @ColumnInfo(defaultValue = "0") val reviewCount: Int = 0,
+    @ColumnInfo(defaultValue = "0") val totalMinutesStudied: Int = 0,
     val breadcrumbNote: String? = null,
 )
 
@@ -63,7 +65,7 @@ data class StudySessionEntity(
     val startedAtEpochMs: Long,
     val endedAtEpochMs: Long,
     val durationMinutes: Int,
-    val mode: String,
+    val mode: ChargeMode,
     val batteryBefore: Float,
     val batteryAfter: Float,
     val stabilityBefore: Float,
@@ -90,4 +92,11 @@ class LocalConverters {
     @TypeConverter
     fun stringToChapterStatus(value: String): ChapterStatus =
         runCatching { ChapterStatus.valueOf(value) }.getOrDefault(ChapterStatus.LOCKED)
+
+    @TypeConverter
+    fun chargeModeToString(value: ChargeMode): String = value.name
+
+    @TypeConverter
+    fun stringToChargeMode(value: String): ChargeMode =
+        runCatching { ChargeMode.valueOf(value) }.getOrDefault(ChargeMode.DEEP_CHARGE)
 }

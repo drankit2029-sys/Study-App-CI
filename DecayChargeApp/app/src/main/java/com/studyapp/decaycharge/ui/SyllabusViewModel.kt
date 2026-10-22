@@ -3,7 +3,7 @@ package com.studyapp.decaycharge.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.studyapp.decaycharge.data.repository.StudyRepository
+import com.studyapp.decaycharge.data.repository.TriageRepository
 import com.studyapp.decaycharge.model.SubjectSummary
 import com.studyapp.decaycharge.model.Zone
 import com.studyapp.decaycharge.model.ZoneFilter
@@ -44,7 +44,7 @@ private data class SearchCriteria(
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class SyllabusViewModel @Inject constructor(
-    repository: StudyRepository,
+    repository: TriageRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val query = savedStateHandle.getStateFlow(KEY_QUERY, "")
@@ -59,12 +59,13 @@ class SyllabusViewModel @Inject constructor(
     }
 
     val uiState: StateFlow<SyllabusUiState> = combine(
-        repository.subjects,
-        repository.chapters,
+        repository.content,
         criteria,
         selectedSubjectId,
         expandedSubjectIds,
-    ) { subjects, chapters, search, selected, expanded ->
+    ) { content, search, selected, expanded ->
+        val subjects = content.subjects
+        val chapters = content.chapters
         val term = search.query.lowercase()
         val matching = chapters.filter { chapter ->
             search.filter.accepts(chapter.zone) && (

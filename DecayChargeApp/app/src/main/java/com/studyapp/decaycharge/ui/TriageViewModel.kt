@@ -2,7 +2,7 @@ package com.studyapp.decaycharge.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.studyapp.decaycharge.data.repository.StudyRepository
+import com.studyapp.decaycharge.data.repository.TriageRepository
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChapterStatus
 import com.studyapp.decaycharge.model.Subject
@@ -39,17 +39,18 @@ data class TriageUiState(
 
 @HiltViewModel
 class TriageViewModel @Inject constructor(
-    repository: StudyRepository,
+    repository: TriageRepository,
 ) : ViewModel() {
     private val filter = MutableStateFlow(ZoneFilter.ALL)
 
     val uiState: StateFlow<TriageUiState> = combine(
-        repository.subjects,
-        repository.chapters,
+        repository.content,
         filter,
-    ) { subjects, chapters, selectedFilter ->
+    ) { content, selectedFilter ->
+        val subjects = content.subjects
+        val chapters = content.chapters
         TriageUiState(
-            readiness = chapters.weightedReadiness(),
+            readiness = chapters.weightedReadiness(subjects),
             chapters = chapters,
             subjects = subjects,
             summaries = chapters.toSubjectSummaries(subjects),
