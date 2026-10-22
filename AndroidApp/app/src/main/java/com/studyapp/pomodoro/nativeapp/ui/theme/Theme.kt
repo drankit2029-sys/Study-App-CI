@@ -4,28 +4,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val PomodoroColors = lightColorScheme(
-    primary = DeepTeal,
-    onPrimary = OnTeal,
-    primaryContainer = DeepTeal,
-    onPrimaryContainer = OnTeal,
-    secondary = WarmAmber,
-    onSecondary = Charcoal,
-    secondaryContainer = AmberTint,
-    background = BaseCream,
-    onBackground = Charcoal,
-    surface = RaisedCream,
-    onSurface = Charcoal,
-    surfaceVariant = InsetCream,
-    onSurfaceVariant = MutedGrey,
-    outline = BorderCream,
-    error = MutedCrimson,
+private val CalmColors = lightColorScheme(
+    primary = Forest,
+    onPrimary = Ivory,
+    primaryContainer = MintLight,
+    onPrimaryContainer = Forest,
+    secondary = Mint,
+    onSecondary = Ink,
+    secondaryContainer = MintLight,
+    onSecondaryContainer = Forest,
+    background = Ivory,
+    onBackground = Ink,
+    surface = Paper,
+    onSurface = Ink,
+    surfaceVariant = Parchment,
+    onSurfaceVariant = Muted,
+    outline = Border,
+    error = Error,
 )
 
 @Composable
 fun PomodoroTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = PomodoroColors,
+        colorScheme = CalmColors,
         typography = PomodoroTypography,
         content = content,
     )

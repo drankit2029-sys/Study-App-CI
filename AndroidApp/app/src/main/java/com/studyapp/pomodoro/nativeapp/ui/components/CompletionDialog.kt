@@ -2,6 +2,8 @@ package com.studyapp.pomodoro.nativeapp.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,17 +14,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,11 +42,13 @@ import androidx.compose.ui.window.DialogProperties
 import com.studyapp.pomodoro.nativeapp.CompletionInfo
 import com.studyapp.pomodoro.nativeapp.Phase
 import com.studyapp.pomodoro.nativeapp.SessionSettings
-import com.studyapp.pomodoro.nativeapp.ui.theme.Charcoal
-import com.studyapp.pomodoro.nativeapp.ui.theme.DeepTeal
-import com.studyapp.pomodoro.nativeapp.ui.theme.MutedGrey
-import com.studyapp.pomodoro.nativeapp.ui.theme.RaisedCream
-import com.studyapp.pomodoro.nativeapp.ui.theme.TealTint
+import com.studyapp.pomodoro.nativeapp.ui.theme.Forest
+import com.studyapp.pomodoro.nativeapp.ui.theme.Ink
+import com.studyapp.pomodoro.nativeapp.ui.theme.Ivory
+import com.studyapp.pomodoro.nativeapp.ui.theme.MintLight
+import com.studyapp.pomodoro.nativeapp.ui.theme.Muted
+import com.studyapp.pomodoro.nativeapp.ui.theme.Paper
+import com.studyapp.pomodoro.nativeapp.ui.theme.Stone
 
 @Composable
 fun CompletionDialog(
@@ -59,6 +71,8 @@ fun CompletionDialog(
             "Break finished. Your next ${settings.focus}-minute focus session is ready when you are."
     }
     val confirmLabel = if (completion.next == Phase.Focus) "Start focus" else "Start break"
+    val haptic = LocalHapticFeedback.current
+    val closeInteraction = MutableInteractionSource()
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -72,63 +86,127 @@ fun CompletionDialog(
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 340.dp)
+                    .widthIn(max = 350.dp)
                     .fillMaxWidth()
-                    .softRaised(RaisedCream, 20.dp, 20.dp)
-                    .border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
+                    .softRaised(Paper, 26.dp, 20.dp)
+                    .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(26.dp))
                     .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .softRaised(RaisedCream, 999.dp, 6.dp)
-                        .background(TealTint, RoundedCornerShape(999.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.CheckCircle,
-                        contentDescription = null,
-                        tint = DeepTeal,
-                        modifier = Modifier.size(30.dp),
-                    )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 28.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(54.dp)
+                                .background(MintLight, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = null,
+                                tint = Forest,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = title,
+                                color = Ink,
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontSize = 32.sp,
+                                    lineHeight = 34.sp,
+                                    fontWeight = FontWeight.Normal,
+                                ),
+                            )
+                            Text(
+                                text = "You're ready to go.",
+                                color = Muted,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    letterSpacing = 1.6.sp,
+                                ),
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable(
+                                interactionSource = closeInteraction,
+                                indication = null,
+                                role = Role.Button,
+                            ) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onDismiss()
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = "Close dialog",
+                            tint = Muted,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = title,
-                    color = Charcoal,
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        lineHeight = 26.sp,
-                    ),
-                )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(18.dp))
                 Text(
                     text = message,
-                    color = MutedGrey,
-                    textAlign = TextAlign.Center,
+                    color = Muted,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontSize = 13.sp,
                         lineHeight = 20.sp,
                     ),
                 )
                 Spacer(Modifier.height(24.dp))
+                SoftButton(
+                    label = confirmLabel,
+                    onClick = onStartNext,
+                    trailingIcon = Icons.Rounded.ArrowForward,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                SoftButton(
+                    label = "Later",
+                    onClick = onDismiss,
+                    variant = SoftButtonVariant.Secondary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SoftButton(
-                        label = "Later",
-                        onClick = onDismiss,
-                        variant = SoftButtonVariant.Secondary,
-                        modifier = Modifier.weight(1f),
+                    Box(
+                        modifier = Modifier
+                            .width(26.dp)
+                            .height(1.dp)
+                            .background(Stone),
                     )
-                    SoftButton(
-                        label = confirmLabel,
-                        onClick = onStartNext,
-                        modifier = Modifier.weight(1f),
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "A GENTLE PAUSE",
+                        color = Muted,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 7.sp,
+                            letterSpacing = 1.8.sp,
+                        ),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(26.dp)
+                            .height(1.dp)
+                            .background(Stone),
                     )
                 }
             }

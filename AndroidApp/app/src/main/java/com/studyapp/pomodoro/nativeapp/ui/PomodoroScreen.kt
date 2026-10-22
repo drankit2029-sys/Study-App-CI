@@ -1,5 +1,9 @@
 package com.studyapp.pomodoro.nativeapp.ui
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -20,66 +25,57 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Timer
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.studyapp.pomodoro.nativeapp.PomodoroUiState
 import com.studyapp.pomodoro.nativeapp.Phase
+import com.studyapp.pomodoro.nativeapp.PomodoroUiState
 import com.studyapp.pomodoro.nativeapp.SessionsPerCycle
 import com.studyapp.pomodoro.nativeapp.SettingBounds
 import com.studyapp.pomodoro.nativeapp.formatClock
 import com.studyapp.pomodoro.nativeapp.heading
+import com.studyapp.pomodoro.nativeapp.ui.components.BotanicalBranch
 import com.studyapp.pomodoro.nativeapp.ui.components.CompletionDialog
 import com.studyapp.pomodoro.nativeapp.ui.components.ModeTabs
 import com.studyapp.pomodoro.nativeapp.ui.components.ProgressRing
 import com.studyapp.pomodoro.nativeapp.ui.components.SoftButton
-import com.studyapp.pomodoro.nativeapp.ui.components.SoftIconButton
-import com.studyapp.pomodoro.nativeapp.ui.components.StatCard
+import com.studyapp.pomodoro.nativeapp.ui.components.SoftButtonVariant
 import com.studyapp.pomodoro.nativeapp.ui.components.Stepper
-import com.studyapp.pomodoro.nativeapp.ui.components.softInset
 import com.studyapp.pomodoro.nativeapp.ui.components.softRaised
-import com.studyapp.pomodoro.nativeapp.ui.theme.BaseCream
-import com.studyapp.pomodoro.nativeapp.ui.theme.BorderCream
-import com.studyapp.pomodoro.nativeapp.ui.theme.Charcoal
-import com.studyapp.pomodoro.nativeapp.ui.theme.DeepTeal
-import com.studyapp.pomodoro.nativeapp.ui.theme.DisabledFill
-import com.studyapp.pomodoro.nativeapp.ui.theme.DotIdle
-import com.studyapp.pomodoro.nativeapp.ui.theme.FocusGlow
-import com.studyapp.pomodoro.nativeapp.ui.theme.InsetCream
-import com.studyapp.pomodoro.nativeapp.ui.theme.MutedGrey
-import com.studyapp.pomodoro.nativeapp.ui.theme.OnTeal
-import com.studyapp.pomodoro.nativeapp.ui.theme.RaisedCream
-import com.studyapp.pomodoro.nativeapp.ui.theme.TealTint
-import com.studyapp.pomodoro.nativeapp.ui.theme.WarmAmber
+import com.studyapp.pomodoro.nativeapp.ui.theme.Border
+import com.studyapp.pomodoro.nativeapp.ui.theme.Forest
+import com.studyapp.pomodoro.nativeapp.ui.theme.Ink
+import com.studyapp.pomodoro.nativeapp.ui.theme.Ivory
+import com.studyapp.pomodoro.nativeapp.ui.theme.Mint
+import com.studyapp.pomodoro.nativeapp.ui.theme.Muted
+import com.studyapp.pomodoro.nativeapp.ui.theme.Paper
+import com.studyapp.pomodoro.nativeapp.ui.theme.Stone
+import com.studyapp.pomodoro.nativeapp.ui.theme.StoneLight
 
 @Composable
 fun PomodoroScreen(
@@ -106,15 +102,21 @@ fun PomodoroScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BaseCream),
+            .background(Ivory),
     ) {
+        BotanicalBranch(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 52.dp, y = (-18).dp)
+                .size(132.dp),
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(top = 16.dp, bottom = 40.dp),
+                .padding(top = 18.dp, bottom = 36.dp),
         ) {
             Header()
             Spacer(Modifier.height(24.dp))
@@ -125,9 +127,11 @@ fun PomodoroScreen(
                 onSelectPhase = onSelectPhase,
             )
             Spacer(Modifier.height(16.dp))
-            StatsRow(state)
+            RhythmCard(state)
             Spacer(Modifier.height(16.dp))
             SettingsCard(state = state, onUpdateSetting = onUpdateSetting)
+            Spacer(Modifier.height(26.dp))
+            Footer()
         }
     }
 
@@ -143,64 +147,38 @@ fun PomodoroScreen(
 
 @Composable
 private fun Header() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                modifier = Modifier
-                    .height(28.dp)
-                    .softInset(InsetCream, 14.dp, 6.dp)
-                    .padding(horizontal = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.AutoAwesome,
-                    contentDescription = null,
-                    tint = DeepTeal,
-                    modifier = Modifier.size(14.dp),
-                )
-                Text(
-                    text = "STUDY RHYTHM",
-                    color = DeepTeal,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 9.sp,
-                        letterSpacing = 1.4.sp,
-                        lineHeight = 12.sp,
-                    ),
-                )
-            }
-            Text(
-                text = "Pomodoro",
-                color = Charcoal,
-                modifier = Modifier.padding(top = 12.dp),
-                style = MaterialTheme.typography.headlineLarge,
-            )
-            Text(
-                text = "A softer way to protect your focus.",
-                color = MutedGrey,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
-                    lineHeight = 19.sp,
-                ),
-            )
-        }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "STUDY / RHYTHM",
+            color = Forest,
+            style = MaterialTheme.typography.displaySmall.copy(
+                fontSize = 17.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = 4.6.sp,
+            ),
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Pomodoro",
+            color = Ink,
+            style = MaterialTheme.typography.displayMedium.copy(
+                fontSize = 46.sp,
+                lineHeight = 48.sp,
+            ),
+        )
+        Text(
+            text = "A softer way to protect your focus.",
+            color = Muted,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(18.dp))
         Box(
             modifier = Modifier
-                .padding(start = 16.dp)
-                .size(56.dp)
-                .softRaised(RaisedCream, 999.dp, 4.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Timer,
-                contentDescription = null,
-                tint = DeepTeal,
-                modifier = Modifier.size(24.dp),
-            )
-        }
+                .width(40.dp)
+                .height(1.dp)
+                .background(Stone),
+        )
     }
 }
 
@@ -214,119 +192,89 @@ private fun TimerCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .softRaised(RaisedCream, 24.dp, 10.dp)
-            .padding(16.dp),
+            .softRaised(Paper, 26.dp, 9.dp)
+            .padding(20.dp),
     ) {
+        SectionLabel(index = "01", title = "FOCUS TIMER")
+        Spacer(Modifier.height(16.dp))
         ModeTabs(
             activePhase = state.phase,
             enabled = !state.isRunning,
             onSelect = onSelectPhase,
         )
-        Spacer(Modifier.height(20.dp))
-        TimerRing(state)
-        Spacer(Modifier.height(16.dp))
-        Row(
+        Spacer(Modifier.height(18.dp))
+        TimerFace(state)
+        Spacer(Modifier.height(18.dp))
+        SoftButton(
+            label = state.actionLabel,
+            onClick = onToggle,
+            leadingIcon = if (state.isRunning) Icons.Rounded.Pause else null,
+            trailingIcon = if (state.isRunning) null else Icons.Rounded.ArrowForward,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SoftButton(
-                label = state.actionLabel,
-                onClick = onToggle,
-                icon = if (state.isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                modifier = Modifier.weight(1f),
-            )
-            SoftIconButton(
-                icon = Icons.Rounded.Refresh,
-                contentDescription = "Reset timer",
-                onClick = onReset,
-                enabled = state.canReset,
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val statusColor = when {
-                state.isRunning -> DeepTeal
-                state.remaining < state.totalSeconds -> WarmAmber
-                else -> DisabledFill
-            }
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .background(statusColor, CircleShape),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = state.statusText,
-                color = MutedGrey,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.widthIn(max = 260.dp),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
-                ),
-            )
-        }
+        )
+        Spacer(Modifier.height(10.dp))
+        SoftButton(
+            label = "Reset timer",
+            onClick = onReset,
+            leadingIcon = Icons.Rounded.Refresh,
+            variant = SoftButtonVariant.Secondary,
+            enabled = state.canReset,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        StatusRow(state)
     }
 }
 
 @Composable
-private fun TimerRing(state: PomodoroUiState) {
+private fun TimerFace(state: PomodoroUiState) {
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
-        val wellSize = minOf(maxWidth, 280.dp)
-        val ringSize = wellSize - 28.dp
-        val clockSize = if (ringSize < 230.dp) 44.sp else 52.sp
-        val clockLineHeight = if (ringSize < 230.dp) 50.sp else 58.sp
-        Box(
-            modifier = Modifier
-                .size(wellSize)
-                .softInset(InsetCream, 999.dp, 12.dp),
-            contentAlignment = Alignment.Center,
+        val faceSize = minOf(maxWidth, 258.dp)
+        val clockSize = if (faceSize < 224.dp) 42.sp else 54.sp
+        val clockLineHeight = if (faceSize < 224.dp) 44.sp else 56.sp
+        ProgressRing(
+            progress = state.progress,
+            size = faceSize,
+            strokeWidth = 8.dp,
         ) {
-            ProgressRing(progress = state.progress, size = ringSize) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = state.phase.heading.uppercase(),
-                        color = MutedGrey,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            letterSpacing = 1.5.sp,
-                            lineHeight = 14.sp,
-                        ),
-                    )
-                    Text(
-                        text = formatClock(state.remaining),
-                        color = Charcoal,
-                        modifier = Modifier
-                            .padding(top = 2.dp)
-                            .semantics {
-                                contentDescription = "${formatClock(state.remaining)} remaining"
-                            },
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontSize = clockSize,
-                            lineHeight = clockLineHeight,
-                            letterSpacing = (-1).sp,
-                            fontFeatureSettings = "tnum",
-                        ),
-                    )
-                    Text(
-                        text = state.sessionLabel,
-                        color = MutedGrey,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp,
-                        ),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    SessionDots(state)
-                }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = state.phase.heading.uppercase(),
+                    color = Muted,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 8.sp,
+                        letterSpacing = 2.4.sp,
+                        lineHeight = 12.sp,
+                    ),
+                )
+                Text(
+                    text = formatClock(state.remaining),
+                    color = Ink,
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .clearAndSetSemantics {
+                            contentDescription = "${formatClock(state.remaining)} remaining"
+                        },
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = clockSize,
+                        lineHeight = clockLineHeight,
+                        fontWeight = FontWeight.Light,
+                        fontFeatureSettings = "lnum, tnum",
+                    ),
+                )
+                Text(
+                    text = state.sessionLabel,
+                    color = Muted,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp,
+                    ),
+                )
+                Spacer(Modifier.height(8.dp))
+                SessionDots(state)
             }
         }
     }
@@ -344,13 +292,15 @@ private fun SessionDots(state: PomodoroUiState) {
             val filled = index < state.filledDots
             val current = state.phase == Phase.Focus && index == state.filledDots
             val dotModifier = when {
-                filled -> Modifier.background(DeepTeal, CircleShape)
-                current -> Modifier.border(2.dp, FocusGlow, CircleShape)
-                else -> Modifier.background(DotIdle, CircleShape)
+                filled -> Modifier.background(Forest, CircleShape)
+                current -> Modifier
+                    .background(Mint, CircleShape)
+                    .border(1.dp, Forest, CircleShape)
+                else -> Modifier.background(StoneLight, CircleShape)
             }
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(7.dp)
                     .then(dotModifier),
             )
         }
@@ -358,30 +308,165 @@ private fun SessionDots(state: PomodoroUiState) {
 }
 
 @Composable
-private fun StatsRow(state: PomodoroUiState) {
+private fun StatusRow(state: PomodoroUiState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        StatCard(
-            icon = Icons.Rounded.CheckCircle,
-            label = "SESSIONS",
-            value = state.completedFocus.toString(),
-            modifier = Modifier.weight(1f),
+        val statusColor: Color = when {
+            state.isRunning -> Forest
+            state.remaining < state.totalSeconds -> Mint
+            else -> Stone
+        }
+        Box(
+            modifier = Modifier
+                .size(5.dp)
+                .background(statusColor, CircleShape),
         )
-        StatCard(
-            icon = Icons.Rounded.Schedule,
-            label = "MINUTES",
-            value = state.focusedMinutes.toString(),
-            modifier = Modifier.weight(1f),
-        )
-        StatCard(
-            icon = Icons.Rounded.Flag,
-            label = "GOAL",
-            value = "${minOf(state.completedFocus, SessionsPerCycle)}/$SessionsPerCycle",
-            modifier = Modifier.weight(1f),
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = state.statusText,
+            color = Muted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 250.dp),
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 10.sp,
+                lineHeight = 15.sp,
+            ),
         )
     }
+}
+
+@Composable
+private fun RhythmCard(state: PomodoroUiState) {
+    val goalCount = minOf(state.completedFocus, SessionsPerCycle)
+    val goalProgress = goalCount.toFloat() / SessionsPerCycle
+    val animatedProgress by animateFloatAsState(
+        targetValue = goalProgress,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "goalProgress",
+    )
+    val caption = when {
+        state.completedFocus == 0 -> "A GENTLE START"
+        state.completedFocus < SessionsPerCycle -> "ALMOST THERE"
+        else -> "CYCLE COMPLETE"
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .softRaised(Paper, 24.dp, 7.dp)
+            .padding(20.dp),
+    ) {
+        SectionLabel(index = "02", title = "TODAY'S RHYTHM")
+        Spacer(Modifier.height(18.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            StatBlock(
+                value = state.completedFocus.toString(),
+                label = "SESSIONS",
+                modifier = Modifier.weight(1f),
+            )
+            StatDivider()
+            StatBlock(
+                value = state.focusedMinutes.toString(),
+                label = "MINUTES",
+                modifier = Modifier.weight(1f),
+            )
+            StatDivider()
+            StatBlock(
+                value = "$goalCount/$SessionsPerCycle",
+                label = "GOAL",
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Spacer(Modifier.height(18.dp))
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(7.dp),
+        ) {
+            val radius = size.height / 2f
+            drawRoundRect(
+                color = StoneLight,
+                cornerRadius = CornerRadius(radius, radius),
+            )
+            if (animatedProgress > 0f) {
+                drawRoundRect(
+                    color = Forest,
+                    size = Size(size.width * animatedProgress, size.height),
+                    cornerRadius = CornerRadius(radius, radius),
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = caption,
+                color = Muted,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 7.sp,
+                    letterSpacing = 1.4.sp,
+                ),
+            )
+            Text(
+                text = "$goalCount OF $SessionsPerCycle",
+                color = Forest,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 7.sp,
+                    letterSpacing = 1.4.sp,
+                ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatBlock(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = value,
+            color = Ink,
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontSize = 34.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.Medium,
+                fontFeatureSettings = "lnum",
+            ),
+        )
+        Spacer(Modifier.height(3.dp))
+        Text(
+            text = label,
+            color = Muted,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 7.sp,
+                letterSpacing = 1.5.sp,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun StatDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(42.dp)
+            .background(Border),
+    )
 }
 
 @Composable
@@ -392,57 +477,23 @@ private fun SettingsCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .softRaised(RaisedCream, 24.dp, 8.dp)
-            .padding(16.dp),
+            .softRaised(Paper, 24.dp, 7.dp)
+            .padding(20.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(TealTint, RoundedCornerShape(10.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Tune,
-                        contentDescription = null,
-                        tint = DeepTeal,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                Text(
-                    text = "Session lengths",
-                    color = Charcoal,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .height(24.dp)
-                    .background(DeepTeal, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 10.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "MINUTES",
-                    color = OnTeal,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 8.sp,
-                        letterSpacing = 1.sp,
-                        lineHeight = 10.sp,
-                    ),
-                )
-            }
+            SectionLabel(index = "03", title = "SESSION LENGTHS")
+            Text(
+                text = "MINUTES",
+                color = Muted,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 7.sp,
+                    letterSpacing = 1.6.sp,
+                ),
+            )
         }
         Spacer(Modifier.height(4.dp))
         Stepper(
@@ -454,7 +505,7 @@ private fun SettingsCard(
             onChange = { onUpdateSetting(Phase.Focus, it) },
             enabled = !state.isRunning,
         )
-        HorizontalDivider(color = BorderCream, thickness = 1.dp)
+        HorizontalDivider(color = Border, thickness = 1.dp)
         Stepper(
             label = "Short break",
             value = state.settings.short,
@@ -464,7 +515,7 @@ private fun SettingsCard(
             onChange = { onUpdateSetting(Phase.ShortBreak, it) },
             enabled = !state.isRunning,
         )
-        HorizontalDivider(color = BorderCream, thickness = 1.dp)
+        HorizontalDivider(color = Border, thickness = 1.dp)
         Stepper(
             label = "Long break",
             value = state.settings.long,
@@ -475,15 +526,71 @@ private fun SettingsCard(
             enabled = !state.isRunning,
         )
         if (state.isRunning) {
-            Spacer(Modifier.height(4.dp))
             Text(
-                text = "Pause the timer to adjust session lengths.",
-                color = MutedGrey,
+                text = "Pause the timer to adjust your rhythm.",
+                color = Muted,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp,
                 ),
             )
         }
+    }
+}
+
+@Composable
+private fun SectionLabel(index: String, title: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = index,
+            color = Forest,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 8.sp,
+                letterSpacing = 1.2.sp,
+            ),
+        )
+        Text(
+            text = title,
+            color = Muted,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 8.sp,
+                letterSpacing = 1.6.sp,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun Footer() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(26.dp)
+                .height(1.dp)
+                .background(Stone),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = "A SOFTER STUDY RHYTHM",
+            color = Muted,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 7.sp,
+                letterSpacing = 2.sp,
+            ),
+        )
+        Spacer(Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .width(26.dp)
+                .height(1.dp)
+                .background(Stone),
+        )
     }
 }

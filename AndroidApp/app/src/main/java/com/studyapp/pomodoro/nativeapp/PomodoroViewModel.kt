@@ -61,9 +61,9 @@ data class PomodoroUiState(
 
     val statusText: String
         get() = when {
-            isRunning -> "Timer running - the screen will stay awake."
-            remaining < totalSeconds -> "Paused. Reset if you want a fresh start."
-            else -> "Start a calm focus block, then take a real break."
+            isRunning -> "The room is quiet. Your focus is protected."
+            remaining < totalSeconds -> "Paused. Begin again when you are ready."
+            else -> "Begin gently. The screen will stay awake while you focus."
         }
 }
 

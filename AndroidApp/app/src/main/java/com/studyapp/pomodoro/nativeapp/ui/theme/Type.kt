@@ -3,21 +3,46 @@ package com.studyapp.pomodoro.nativeapp.ui.theme
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.studyapp.pomodoro.nativeapp.R
 
-private val BaseStyle = TextStyle(
+val Cormorant = FontFamily(
+    Font(R.font.cormorant_light, FontWeight.Light),
+    Font(R.font.cormorant_regular, FontWeight.Normal),
+    Font(R.font.cormorant_medium, FontWeight.Medium),
+)
+
+private val SansStyle = TextStyle(
     fontFamily = FontFamily.SansSerif,
     platformStyle = PlatformTextStyle(includeFontPadding = false),
 )
 
-private fun textStyle(
+private val SerifStyle = TextStyle(
+    fontFamily = Cormorant,
+    platformStyle = PlatformTextStyle(includeFontPadding = false),
+)
+
+private fun sans(
     fontSize: Int,
     fontWeight: FontWeight,
     lineHeight: Int,
     letterSpacing: Float = 0f,
-) = BaseStyle.copy(
+) = SansStyle.copy(
+    fontSize = fontSize.sp,
+    fontWeight = fontWeight,
+    lineHeight = lineHeight.sp,
+    letterSpacing = letterSpacing.sp,
+)
+
+private fun serif(
+    fontSize: Int,
+    fontWeight: FontWeight,
+    lineHeight: Int,
+    letterSpacing: Float = 0f,
+) = SerifStyle.copy(
     fontSize = fontSize.sp,
     fontWeight = fontWeight,
     lineHeight = lineHeight.sp,
@@ -25,14 +50,19 @@ private fun textStyle(
 )
 
 val PomodoroTypography = Typography(
-    headlineLarge = textStyle(32, FontWeight.Bold, 38, -0.6f),
-    headlineMedium = textStyle(20, FontWeight.Bold, 26),
-    titleLarge = textStyle(20, FontWeight.Bold, 24),
-    titleMedium = textStyle(15, FontWeight.Bold, 22),
-    bodyLarge = textStyle(14, FontWeight.Normal, 20),
-    bodyMedium = textStyle(13, FontWeight.Normal, 19),
-    bodySmall = textStyle(11, FontWeight.Normal, 16),
-    labelLarge = textStyle(15, FontWeight.Bold, 20, 0.2f),
-    labelMedium = textStyle(13, FontWeight.SemiBold, 18, 0.2f),
-    labelSmall = textStyle(9, FontWeight.Bold, 14, 1.2f),
+    displayLarge = serif(56, FontWeight.Light, 58, -0.4f),
+    displayMedium = serif(42, FontWeight.Normal, 44),
+    displaySmall = serif(34, FontWeight.Normal, 38),
+    headlineLarge = serif(30, FontWeight.Normal, 34),
+    headlineMedium = serif(26, FontWeight.Medium, 30),
+    headlineSmall = serif(22, FontWeight.Medium, 26),
+    titleLarge = serif(19, FontWeight.Medium, 24, 0.2f),
+    titleMedium = sans(14, FontWeight.SemiBold, 20),
+    titleSmall = sans(12, FontWeight.SemiBold, 16),
+    bodyLarge = sans(14, FontWeight.Normal, 21),
+    bodyMedium = sans(13, FontWeight.Normal, 19),
+    bodySmall = sans(11, FontWeight.Normal, 16),
+    labelLarge = sans(11, FontWeight.SemiBold, 16),
+    labelMedium = sans(11, FontWeight.Medium, 16, 0.1f),
+    labelSmall = sans(8, FontWeight.Bold, 12, 1.8f),
 )

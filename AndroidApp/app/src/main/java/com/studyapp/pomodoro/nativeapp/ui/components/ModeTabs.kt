@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,19 +18,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.studyapp.pomodoro.nativeapp.Phase
 import com.studyapp.pomodoro.nativeapp.shortLabel
-import com.studyapp.pomodoro.nativeapp.ui.theme.DeepTeal
-import com.studyapp.pomodoro.nativeapp.ui.theme.InsetCream
-import com.studyapp.pomodoro.nativeapp.ui.theme.MutedGrey
-import com.studyapp.pomodoro.nativeapp.ui.theme.RaisedCream
+import com.studyapp.pomodoro.nativeapp.ui.theme.Forest
+import com.studyapp.pomodoro.nativeapp.ui.theme.Ivory
+import com.studyapp.pomodoro.nativeapp.ui.theme.Muted
+import com.studyapp.pomodoro.nativeapp.ui.theme.Parchment
 
 private val modes = listOf(Phase.Focus, Phase.ShortBreak, Phase.LongBreak)
 
@@ -45,27 +45,22 @@ fun ModeTabs(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .softRaised(RaisedCream, 24.dp, 4.dp)
-            .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+            .softRaised(Parchment, 22.dp, 2.dp)
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         modes.forEach { phase ->
             val active = phase == activePhase
+            val shape = RoundedCornerShape(19.dp)
             val interactionSource = remember { MutableInteractionSource() }
             val haptic = LocalHapticFeedback.current
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(40.dp)
-                    .alpha(if (enabled) 1f else 0.6f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .then(
-                        if (active) {
-                            Modifier.softInset(InsetCream, 20.dp, 7.dp)
-                        } else {
-                            Modifier
-                        },
-                    )
+                    .height(38.dp)
+                    .alpha(if (enabled) 1f else 0.55f)
+                    .clip(shape)
+                    .background(if (active) Forest else Parchment, shape)
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null,
@@ -81,19 +76,12 @@ fun ModeTabs(
             ) {
                 Text(
                     text = phase.shortLabel,
-                    color = if (active) DeepTeal else MutedGrey,
-                    style = MaterialTheme.typography.labelMedium,
+                    color = if (active) Ivory else Muted,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = 12.sp,
+                        fontWeight = if (active) FontWeight.Medium else FontWeight.Normal,
+                    ),
                 )
-                if (active) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 4.dp)
-                            .width(24.dp)
-                            .height(2.dp)
-                            .background(DeepTeal, RoundedCornerShape(1.dp)),
-                    )
-                }
             }
         }
     }
