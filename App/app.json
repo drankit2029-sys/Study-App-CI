@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Pomodoro",
+    "slug": "study-app-pomodoro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#EFECE6",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.studyapp.pomodoro"
+    },
+    "android": {
+      "package": "com.studyapp.pomodoro",
+      "adaptiveIcon": {
+        "backgroundColor": "#EFECE6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

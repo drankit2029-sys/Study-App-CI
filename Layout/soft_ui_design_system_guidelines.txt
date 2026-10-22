@@ -1,0 +1,178 @@
+================================================================================
+SOFT UI (NEUMORPHIC) DESIGN SYSTEM & REACT NATIVE GUIDELINES
+================================================================================
+
+1. CORE PHILOSOPHY & CROSS-PLATFORM PARITY
+--------------------------------------------------------------------------------
+- Aesthetic: Warm, tactile Soft UI (Neumorphism) with raised cards, carved inset
+  containers, rounded geometry, and high-contrast Deep Teal accents.
+- Target Platforms: Android & iOS (React Native New Architecture / Expo).
+- Golden Rule for Parity: NEVER use Android's legacy `elevation` or iOS-only
+  `shadowOffset` props. Always use React Native's unified `boxShadow` style
+  property (supports both outer drop shadows and `inset: true` inner shadows
+  identically across Android 10+ and iOS).
+- Native Controls Rule: Do NOT use React Native's built-in `<Switch>` or OS
+  `Alert`. Build switches, checkboxes, radios, and modals using `<View>`,
+  `<Text>`, and `<Pressable>` so they match the custom design sheet on both OSes.
+
+
+2. COLOR PALETTE TOKENS
+--------------------------------------------------------------------------------
+- Base Surface / Screen Background : #EFECE6 (Warm Cream)
+- Raised Surface (Cards / Modals)  : #F2EFE9 (Light Warm Cream)
+- Inset Surface (Inputs / Wells)   : #EAE5DC (Recessed Cream)
+- Pressed Surface                  : #DFD9CE (Deep Recessed Cream)
+- Primary Accent (Teal)            : #0F5257 (Deep Pine / Teal)
+- Primary Accent Pressed           : #0A3B3F (Darker Teal)
+- Text Primary                     : #1F2421 (Charcoal Black)
+- Text Secondary / Helper          : #6E6A63 (Warm Muted Grey)
+- Text on Primary Accent           : #FFFFFF (Pure White)
+- Disabled Fill                    : #BDB8B0 (Muted Stone Grey)
+- Disabled Text                    : #ECE9E2 (Off-White)
+- Error / Danger Accent            : #A63A3A (Muted Crimson)
+- Warning Accent                   : #C89D66 (Warm Amber / Ochre)
+- Shadow Dark (Bottom-Right)       : rgba(180, 170, 155, 0.60)
+- Shadow Light (Top-Left Highlight): rgba(255, 255, 255, 0.85)
+- Focus Glow (Teal)                : rgba(15, 82, 87, 0.35)
+
+
+3. FOUNDATIONS & ELEVATION TOKENS (REACT NATIVE `boxShadow`)
+--------------------------------------------------------------------------------
+- Base Layer:
+  backgroundColor: '#EFECE6'
+  Subtle ambient shadow or flat against background.
+
+- Raised Layer (Cards, Unpressed Buttons, Popovers):
+  backgroundColor: '#F2EFE9'
+  boxShadow: [
+    { offsetX: 6, offsetY: 6, blurRadius: 12, color: 'rgba(180, 170, 155, 0.6)' },
+    { offsetX: -6, offsetY: -6, blurRadius: 12, color: 'rgba(255, 255, 255, 0.85)' }
+  ]
+
+- Inset Layer (Text Fields, Empty States, Tracks):
+  backgroundColor: '#EAE5DC'
+  boxShadow: [
+    { inset: true, offsetX: 3, offsetY: 3, blurRadius: 6, color: 'rgba(170, 160, 145, 0.6)' },
+    { inset: true, offsetX: -3, offsetY: -3, blurRadius: 6, color: 'rgba(255, 255, 255, 0.8)' }
+  ]
+
+- Pressed Layer (Active Touch State):
+  backgroundColor: '#DFD9CE'
+  boxShadow: [
+    { inset: true, offsetX: 4, offsetY: 4, blurRadius: 8, color: 'rgba(155, 145, 130, 0.7)' },
+    { inset: true, offsetX: -2, offsetY: -2, blurRadius: 5, color: 'rgba(255, 255, 255, 0.6)' }
+  ]
+
+- Elevation Scale:
+  * Level 1 (Flat)    : No shadow, 1px subtle border ('#E2DDD5').
+  * Level 2 (Hover)   : offsetX/Y: 3, blurRadius: 6.
+  * Level 3 (Raised)  : offsetX/Y: 6, blurRadius: 12.
+  * Level 4 (Modal)   : offsetX/Y: 10, blurRadius: 20.
+  * Level 5 (Popover) : offsetX/Y: 14, blurRadius: 28.
+
+
+4. BORDERS, RADIUS, SPACING, & ICONOGRAPHY
+--------------------------------------------------------------------------------
+- Border Thickness Tokens:
+  * Thin    : 1px
+  * Regular : 2px
+  * Thick   : 4px
+
+- Border Radius Scale:
+  * Small   : 4px  (Pagination buttons, checkboxes)
+  * Medium  : 8px  (Text inputs, toasts, banners)
+  * Large   : 12px (Standard cards, list containers)
+  * X-Large : 16px (Modals, raised feature cards)
+  * 2X-Large: 24px (Large foundation containers)
+  * Pill    : 9999px (Primary buttons, badges, switches)
+
+- Spacing Scale:
+  * Tight   : 8px  (Feedback stack, inline icon gaps, helper text)
+  * Medium  : 16px (Controls spacing, tab item gaps, card padding)
+  * Relaxed : 24px (Navigation sections, data display groups, screen padding)
+
+- Iconography Rules:
+  * Sizes         : 16px (Compact/Inline), 20px (Standard UI), 24px (Headers/Nav)
+  * Stroke Weight : 2px uniform stroke
+  * Primary Color : '#0F5257'
+  * Library       : `lucide-react-native` with `react-native-svg`
+
+
+5. CONTROLS SPECIFICATIONS
+--------------------------------------------------------------------------------
+- Primary Button:
+  * Pill-shaped (`borderRadius: 9999`), background '#0F5257', white bold text,
+    wrapped in Level 2/3 outer drop shadow.
+  * Pressed State: Darker teal ('#0A3B3F'), inner shadow (`inset: true`),
+    optional inline spinner + status text (e.g., "Sending...").
+  * Disabled State: Flat fill '#BDB8B0', text '#ECE9E2', no drop shadow.
+
+- Text Field:
+  * Default: `<TextInput>` inside an Inset Layer `<View>` (`borderRadius: 8`).
+    Helper text below in 12px '#6E6A63'.
+  * Focused State: `borderWidth: 1.5`, `borderColor: '#0F5257'`, plus outer glow:
+    `{ offsetX: 0, offsetY: 0, blurRadius: 8, spreadDistance: 1, color: 'rgba(15, 82, 87, 0.35)' }`.
+  * Error State: `borderWidth: 1.5`, `borderColor: '#A63A3A'`, red error message
+    below input.
+
+- Checkbox & Radio:
+  * Unchecked: Inset square (`borderRadius: 4`) or circle with soft inner shadow.
+  * Checked: Filled '#0F5257' with white checkmark (Checkbox) or white center
+    dot (Radio).
+
+- Switch (Custom `<Pressable>`):
+  * ON State: Pill track filled '#0F5257', 'ON' label on left, raised cream
+    circular thumb (`#F2EFE9`) positioned on right.
+  * OFF State: Inset cream track (`#EAE5DC`), raised cream thumb on left,
+    'OFF' label on right.
+
+- Slider:
+  * Recessed horizontal track (`height: 6`), filled '#0F5257' up to active value,
+    raised circular thumb, dark floating tooltip badge (`#2B2927`) above thumb
+    showing percentage, tick marks (0, 25, 50, 75, 100) below.
+
+
+6. NAVIGATION, DATA DISPLAY, & FEEDBACK COMPONENTS
+--------------------------------------------------------------------------------
+- Navigation:
+  * Tabs: Raised pill/rounded bar (`padding: 4`), active tab has bottom 2px
+    '#0F5257' indicator bar and bold text.
+  * Breadcrumbs: Raised container showing path separated by `/`, current page bold.
+  * 4-Step Process: Circular step nodes (1-4) connected by 2px horizontal line.
+    Completed steps have teal outline; active step is solid '#0F5257' with dark
+    floating callout bubble above.
+  * Pagination: Horizontal row with PREV/NEXT and numbered buttons; active page
+    uses solid '#0F5257' square (`borderRadius: 6`) with white text.
+
+- Data Display:
+  * Cards: Raised Layer (`borderRadius: 16`, `padding: 16`), teal icon badge at
+    top-left, bold title, muted subtitle, small pill CTA button at bottom-left.
+  * List Items: Raised or outlined container with circular avatar (`40x40`),
+    title + subtitle stack, separated by subtle dividers or 8px vertical gap.
+  * Badges: Pill-shaped (`borderRadius: 9999`), background '#0F5257', white text.
+  * Avatars: Circular image wrapped in a 2px cream border and raised shadow.
+  * Compact Table Header: Raised bar with column labels and sort arrows.
+
+- Feedback:
+  * Modal Confirmation: Level 4 Raised card (`borderRadius: 20`), centered title,
+    soft 3D/tactile warning triangle icon, confirmation text, and dual buttons
+    (Raised Cream "Cancel" + Solid Teal "Delete").
+  * Toast Stack: Raised horizontal bars (`borderRadius: 10`) with status text
+    and trailing checkmark icon.
+  * Alert Banner: Solid '#0F5257' rounded box with white exclamation icon and
+    white body text.
+  * Linear Progress: Inset track with '#0F5257' fill bar and percentage label.
+  * Empty State: Dashed border container (`borderStyle: 'dashed'`) with recessed
+    magnifying glass illustration, "No Results Found" title, and teal pill button.
+
+
+7. ACCEPTABLE PLATFORM DEFAULTS (NO EXTRA CODE NEEDED)
+--------------------------------------------------------------------------------
+- Typography: Default OS sans-serif (`SF Pro` on iOS, `Roboto` on Android) works
+  well out of the box. Add `includeFontPadding: false` on `<Text>` styles so
+  vertical button/badge centering stays identical on Android.
+- Touch Feedback: Use `<Pressable style={({ pressed }) => ...}>` to swap between
+  `raisedLayer` and `pressedLayer` rather than using `android_ripple`.
+- Scroll & Text Selection: Leave native scroll bounce/stretch and native text
+  selection handles on default settings for familiar OS ergonomics.
+================================================================================
