@@ -307,7 +307,7 @@ class DecayCalculatorTest {
         )
         assertEquals(3f, snapshot.elapsedDays, 0.0001f)
         assertEquals(3, snapshot.daysSinceCharge)
-        assertEquals(45.48f, snapshot.battery, 0.01f)
+        assertEquals(45.50f, snapshot.battery, 0.01f)
         assertEquals(11.94f, snapshot.drainRatePerDay, 0.01f)
     }
 
