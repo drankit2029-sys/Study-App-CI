@@ -1,0 +1,32 @@
+package com.studyapp.decaycharge.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+val Ivory = Color(0xFFFAF9F4)
+val Paper = Color(0xFFFDFBF6)
+val Parchment = Color(0xFFF2EEE4)
+val Forest = Color(0xFF0F5132)
+val ForestDeep = Color(0xFF0A3D26)
+val Mint = Color(0xFFB7D9C1)
+val MintLight = Color(0xFFE4EFE6)
+val Stone = Color(0xFFD6D3C8)
+val StoneLight = Color(0xFFE9E5DA)
+val Ink = Color(0xFF1F2B23)
+val Muted = Color(0xFF7E8378)
+val MutedLight = Color(0xFFA4A79D)
+val Border = Color(0xFFEDE8DC)
+val White = Color(0xFFFFFFFF)
+val Error = Color(0xFFA63A3A)
+val ShadowWarm = Color(0x33706B5D)
+val ShadowSoft = Color(0x26706B5D)
+val Overlay = Color(0x591E2B23)
+
+val ZoneRed = Color(0xFFB2574A)
+val ZoneRedSoft = Color(0xFFF3E2DD)
+val ZoneAmber = Color(0xFFBD8848)
+val ZoneAmberSoft = Color(0xFFF5EAD8)
+val ZoneGreen = Color(0xFF4E7A5A)
+val ZoneGreenSoft = Color(0xFFE3EDE4)
+val Ice = Color(0xFF5D8490)
+val IceSoft = Color(0xFFE5EEF0)
+val Plum = Color(0xFF80627A)

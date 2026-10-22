@@ -1,0 +1,53 @@
+name: DecayCharge Debug APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'DecayChargeApp/**'
+      - '.github/workflows/decaycharge-debug.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'DecayChargeApp/**'
+      - '.github/workflows/decaycharge-debug.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: decaycharge-debug-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    name: Build DecayCharge debug APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: DecayChargeApp
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: decaycharge-debug-apk
+          path: DecayChargeApp/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
