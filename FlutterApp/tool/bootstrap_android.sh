@@ -48,6 +48,7 @@ for path in (root / "res").rglob("*.xml"):
         content.replace("@android:color/white", "@color/ivory")
         .replace("@android:color/black", "@color/ivory")
         .replace("?android:colorBackground", "@color/ivory")
+        .replace("Theme.Black.NoTitleBar", "Theme.Light.NoTitleBar")
     )
     if updated != content:
         path.write_text(updated)
