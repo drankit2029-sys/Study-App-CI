@@ -3,8 +3,14 @@ name: Android Debug and Release APKs
 on:
   push:
     branches: [main]
+    paths:
+      - 'App/**'
+      - '.github/workflows/android-apks.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'App/**'
+      - '.github/workflows/android-apks.yml'
   workflow_dispatch:
 
 permissions:
