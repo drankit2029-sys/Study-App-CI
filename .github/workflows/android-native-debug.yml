@@ -1,28 +1,28 @@
-name: Native Android Debug and Release APKs
+name: Native Android Debug APK
 
 on:
   push:
     branches: [main]
     paths:
       - 'AndroidApp/**'
-      - '.github/workflows/android-native-apks.yml'
+      - '.github/workflows/android-native-debug.yml'
   pull_request:
     branches: [main]
     paths:
       - 'AndroidApp/**'
-      - '.github/workflows/android-native-apks.yml'
+      - '.github/workflows/android-native-debug.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-native-apks-${{ github.ref }}
+  group: android-native-debug-apk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-apks:
-    name: Build native debug and release APKs
+  build-apk:
+    name: Build native debug APK
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,21 +41,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build debug and release APKs
-        run: ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
           name: study-app-native-debug-apk
           path: AndroidApp/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload release APK
-        uses: actions/upload-artifact@v7
-        with:
-          name: study-app-native-release-apk
-          path: AndroidApp/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
