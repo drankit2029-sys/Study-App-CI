@@ -29,6 +29,9 @@ interface SubjectDao {
 
     @Query("DELETE FROM subjects WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM subjects")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -62,6 +65,9 @@ interface ChapterDao {
 
     @Query("DELETE FROM chapters WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM chapters")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -71,6 +77,15 @@ interface StudySessionDao {
 
     @Insert
     suspend fun insert(session: StudySessionEntity): Long
+
+    @Query("SELECT * FROM study_sessions ORDER BY startedAtEpochMs DESC")
+    suspend fun getAll(): List<StudySessionEntity>
+
+    @Insert
+    suspend fun insertAll(sessions: List<StudySessionEntity>)
+
+    @Query("DELETE FROM study_sessions")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -78,11 +93,14 @@ interface CryoFreezeDao {
     @Query("SELECT * FROM cryo_freezes ORDER BY startEpochMs DESC")
     fun observeAll(): Flow<List<CryoFreezeEntity>>
 
-    @Query("SELECT * FROM cryo_freezes WHERE endEpochMs IS NULL ORDER BY startEpochMs DESC LIMIT 1")
-    suspend fun getActive(): CryoFreezeEntity?
-
     @Upsert
     suspend fun upsert(freeze: CryoFreezeEntity): Long
+
+    @Query("SELECT * FROM cryo_freezes ORDER BY startEpochMs DESC")
+    suspend fun getAll(): List<CryoFreezeEntity>
+
+    @Query("DELETE FROM cryo_freezes")
+    suspend fun clearAll()
 }
 
 @Database(

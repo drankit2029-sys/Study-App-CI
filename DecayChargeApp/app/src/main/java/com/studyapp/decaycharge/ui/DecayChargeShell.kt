@@ -1,5 +1,10 @@
 package com.studyapp.decaycharge.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,6 +30,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Pause
@@ -35,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -50,6 +58,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -63,6 +72,7 @@ import com.studyapp.decaycharge.navigation.AnalyticsRoute
 import com.studyapp.decaycharge.navigation.ChargerRoute
 import com.studyapp.decaycharge.navigation.ImportRoute
 import com.studyapp.decaycharge.navigation.LocalWindowSizeClass
+import com.studyapp.decaycharge.navigation.SettingsRoute
 import com.studyapp.decaycharge.navigation.SyllabusRoute
 import com.studyapp.decaycharge.navigation.TopLevelDestination
 import com.studyapp.decaycharge.navigation.TriageRoute
@@ -72,10 +82,13 @@ import com.studyapp.decaycharge.ui.components.Hairline
 import com.studyapp.decaycharge.ui.screens.AnalyticsScreen
 import com.studyapp.decaycharge.ui.screens.ChargerScreen
 import com.studyapp.decaycharge.ui.screens.ImportScreen
+import com.studyapp.decaycharge.ui.screens.SettingsScreen
 import com.studyapp.decaycharge.ui.screens.SyllabusScreen
 import com.studyapp.decaycharge.ui.screens.TriageScreen
 import com.studyapp.decaycharge.ui.theme.Border
 import com.studyapp.decaycharge.ui.theme.Forest
+import com.studyapp.decaycharge.ui.theme.Ice
+import com.studyapp.decaycharge.ui.theme.IceSoft
 import com.studyapp.decaycharge.ui.theme.Ink
 import com.studyapp.decaycharge.ui.theme.Ivory
 import com.studyapp.decaycharge.ui.theme.MintLight
@@ -86,9 +99,24 @@ import com.studyapp.decaycharge.ui.theme.StoneLight
 import com.studyapp.decaycharge.ui.theme.ZoneGreen
 
 @Composable
-fun DecayChargeApp() {
+fun DecayChargeApp(
+    autoLaunchChapterId: Long? = null,
+    onAutoLaunchHandled: () -> Unit = {},
+) {
     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
     val needsOnboarding by onboardingViewModel.needsOnboarding.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {}
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     when (needsOnboarding) {
         null -> {
@@ -123,14 +151,22 @@ fun DecayChargeApp() {
             }
         }
 
-        false -> DecayChargeMain()
+        false -> DecayChargeMain(
+            autoLaunchChapterId = autoLaunchChapterId,
+            onAutoLaunchHandled = onAutoLaunchHandled,
+        )
     }
 }
 
 @Composable
-private fun DecayChargeMain() {
+private fun DecayChargeMain(
+    autoLaunchChapterId: Long?,
+    onAutoLaunchHandled: () -> Unit,
+) {
     val navController = rememberNavController()
     val sessionViewModel: SessionViewModel = hiltViewModel()
+    val shellViewModel: ShellViewModel = hiltViewModel()
+    val activeFreeze by shellViewModel.activeFreeze.collectAsStateWithLifecycle()
     val activeSession by sessionViewModel.activeSession.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val destination = backStackEntry?.destination
@@ -143,6 +179,14 @@ private fun DecayChargeMain() {
         sizeClass.heightSizeClass == WindowHeightSizeClass.Compact
     val showNavigation = currentTab != null
 
+    LaunchedEffect(autoLaunchChapterId) {
+        val chapterId = autoLaunchChapterId ?: return@LaunchedEffect
+        navController.navigate(ChargerRoute(chapterId, quickTopUp = false)) {
+            launchSingleTop = true
+        }
+        onAutoLaunchHandled()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -152,6 +196,12 @@ private fun DecayChargeMain() {
             )
             .statusBarsPadding(),
     ) {
+        activeFreeze?.let { freeze ->
+            CryoGlobalBanner(
+                endEpochMs = freeze.endEpochMs,
+                onOpen = { navController.switchTab(TopLevelDestination.Triage) },
+            )
+        }
         Row(
             modifier = Modifier
                 .weight(1f)
@@ -181,7 +231,7 @@ private fun DecayChargeMain() {
                 MiniChargerBar(
                     session = session,
                     onOpen = {
-                        navController.navigate(ChargerRoute(session.chapterId)) {
+                        navController.navigate(ChargerRoute(session.chapterId, quickTopUp = false)) {
                             launchSingleTop = true
                         }
                     },
@@ -224,7 +274,9 @@ private fun DecayNavHost(
             val viewModel: TriageViewModel = hiltViewModel()
             TriageScreen(
                 viewModel = viewModel,
-                onOpenCharger = { navController.navigate(ChargerRoute(it)) },
+                onOpenCharger = { navController.navigate(ChargerRoute(it, quickTopUp = false)) },
+                onOpenQuickCharge = { navController.navigate(ChargerRoute(it, quickTopUp = true)) },
+                onOpenSettings = { navController.navigate(SettingsRoute) { launchSingleTop = true } },
             )
         }
         composable<SyllabusRoute> {
@@ -232,7 +284,7 @@ private fun DecayNavHost(
             SyllabusScreen(
                 viewModel = viewModel,
                 onBackToTriage = { navController.switchTab(TopLevelDestination.Triage) },
-                onOpenCharger = { navController.navigate(ChargerRoute(it)) },
+                onOpenCharger = { navController.navigate(ChargerRoute(it, quickTopUp = false)) },
                 onOpenImport = { navController.navigate(ImportRoute) { launchSingleTop = true } },
             )
         }
@@ -241,6 +293,13 @@ private fun DecayNavHost(
             AnalyticsScreen(
                 viewModel = viewModel,
                 onBackToTriage = { navController.switchTab(TopLevelDestination.Triage) },
+            )
+        }
+        composable<SettingsRoute> {
+            val viewModel: SettingsViewModel = hiltViewModel()
+            SettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
             )
         }
         composable<ImportRoute> {
@@ -327,6 +386,8 @@ private fun MiniChargerBar(
                 Text(
                     text = if (session.isComplete) {
                         "${session.projectedBattery.toInt()}% held · choose a recall rating"
+                    } else if (session.isStopwatch) {
+                        "${session.subjectName} · ${formatSeconds(session.elapsedSeconds)} elapsed"
                     } else {
                         "${session.subjectName} · ${formatSeconds(session.remainingSeconds)} remaining"
                     },
@@ -565,6 +626,45 @@ private fun RailDestination(
                 fontSize = 7.sp,
                 letterSpacing = 1.0.sp,
                 fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+            ),
+        )
+    }
+}
+
+
+@Composable
+private fun CryoGlobalBanner(
+    endEpochMs: Long?,
+    onOpen: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(IceSoft)
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 16.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.AcUnit,
+            contentDescription = null,
+            tint = Ice,
+            modifier = Modifier.size(13.dp),
+        )
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = if (endEpochMs == null) {
+                "CRYO-FREEZE ACTIVE · decay paused"
+            } else {
+                "CRYO-FREEZE ACTIVE · decay paused until " +
+                    java.time.Instant.ofEpochMilli(endEpochMs)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .format(java.time.format.DateTimeFormatter.ofPattern("d MMM, HH:mm"))
+            },
+            color = Ice,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 7.sp,
+                letterSpacing = 1.1.sp,
             ),
         )
     }

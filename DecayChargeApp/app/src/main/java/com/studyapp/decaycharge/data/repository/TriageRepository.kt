@@ -1,9 +1,12 @@
 package com.studyapp.decaycharge.data.repository
 
 import androidx.room.withTransaction
+import com.studyapp.decaycharge.data.prefs.UserPreferences
+import com.studyapp.decaycharge.data.prefs.UserPreferencesRepository
 import com.studyapp.decaycharge.data.local.ChapterDao
 import com.studyapp.decaycharge.data.local.ChapterEntity
 import com.studyapp.decaycharge.data.local.CryoFreezeDao
+import com.studyapp.decaycharge.data.local.CryoFreezeEntity
 import com.studyapp.decaycharge.data.local.DecayChargeDatabase
 import com.studyapp.decaycharge.data.local.StudySessionDao
 import com.studyapp.decaycharge.data.local.StudySessionEntity
@@ -17,7 +20,10 @@ import com.studyapp.decaycharge.domain.DecayCalculator
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChapterStatus
 import com.studyapp.decaycharge.model.ChargeMode
+import com.studyapp.decaycharge.model.CryoFreezeStatus
+import com.studyapp.decaycharge.model.StudySessionRecord
 import com.studyapp.decaycharge.model.Subject
+import com.studyapp.decaycharge.widget.WidgetUpdater
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +45,7 @@ import kotlinx.coroutines.isActive
 data class StudyContent(
     val subjects: List<Subject> = emptyList(),
     val chapters: List<Chapter> = emptyList(),
+    val activeFreeze: CryoFreezeStatus? = null,
 )
 
 data class CompletedCharge(
@@ -57,6 +64,7 @@ data class CompletedCharge(
 
 interface TriageRepository {
     val content: StateFlow<StudyContent>
+    val sessions: StateFlow<List<StudySessionRecord>>
     fun chapter(chapterId: Long): Flow<Chapter?>
     suspend fun saveCompletedCharge(charge: CompletedCharge): Boolean
     suspend fun importSyllabus(draft: SyllabusDraft): Int
@@ -64,6 +72,9 @@ interface TriageRepository {
     suspend fun updateChapterTarget(chapterIds: Set<Long>, targetMinutes: Int)
     suspend fun exportCsv(): String
     suspend fun purgeLegacyDemoData(): Boolean
+    suspend fun startCryoFreeze(hours: Int?, note: String?)
+    suspend fun extendCryoFreeze(hours: Int)
+    suspend fun endCryoFreeze()
 }
 
 @Singleton
@@ -73,7 +84,9 @@ class OfflineTriageRepository @Inject constructor(
     private val cryoFreezeDao: CryoFreezeDao,
     private val studySessionDao: StudySessionDao,
     private val database: DecayChargeDatabase,
+    private val preferences: UserPreferencesRepository,
     private val clock: AppClock,
+    private val widgetUpdater: WidgetUpdater,
 ) : TriageRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -89,49 +102,47 @@ class OfflineTriageRepository @Inject constructor(
         chapterDao.observeAll(),
         cryoFreezeDao.observeAll(),
         ticker,
-    ) { subjectEntities, chapterEntities, freezeEntities, nowEpochMs ->
-        val subjects = subjectEntities.map { it.toDomain() }
-        val subjectsById = subjects.associateBy { it.id }
-        val freezes = freezeEntities.map {
-            CryoFreezeInterval(startEpochMs = it.startEpochMs, endEpochMs = it.endEpochMs)
-        }
-        val chapters = chapterEntities.mapNotNull { entity ->
-            val subject = subjectsById[entity.subjectId] ?: return@mapNotNull null
-            val decay = DecayCalculator.snapshot(
-                lastChargedAtEpochMs = entity.lastChargedAtEpochMs,
-                nowEpochMs = nowEpochMs,
-                freezes = freezes,
-                lastBatteryLevel = entity.lastBatteryLevel,
-                status = entity.status,
-                stabilityDays = entity.stabilityDays,
-                difficultyWeight = entity.difficultyWeight,
-            )
-            Chapter(
-                id = entity.id,
-                subjectId = subject.id,
-                subjectName = subject.name,
-                subjectShortName = subject.shortName,
-                subjectColorHex = subject.colorHex,
-                unitName = entity.unitName.orEmpty(),
-                title = entity.title,
-                status = entity.status,
-                battery = decay.battery,
-                stabilityDays = entity.stabilityDays,
-                daysSinceCharge = decay.daysSinceCharge,
-                drainRatePerDay = decay.drainRatePerDay,
-                difficultyWeight = entity.difficultyWeight,
-                targetMinutes = entity.targetMinutes,
-                reviewCount = entity.reviewCount,
-                note = entity.breadcrumbNote,
-            )
-        }
-        StudyContent(subjects = subjects, chapters = chapters)
+        preferences.preferences,
+    ) { subjectEntities, chapterEntities, freezeEntities, nowEpochMs, prefs ->
+        buildContent(subjectEntities, chapterEntities, freezeEntities, nowEpochMs, prefs)
     }
         .flowOn(Dispatchers.Default)
         .stateIn(
             scope = scope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = StudyContent(),
+        )
+
+    override val sessions: StateFlow<List<StudySessionRecord>> = combine(
+        studySessionDao.observeAll(),
+        content,
+    ) { sessionEntities, snapshot ->
+        val chaptersById = snapshot.chapters.associateBy { it.id }
+        sessionEntities.map { entity ->
+            val chapter = chaptersById[entity.chapterId]
+            StudySessionRecord(
+                id = entity.id,
+                chapterId = entity.chapterId,
+                chapterTitle = chapter?.title ?: "Archived chapter",
+                subjectName = chapter?.subjectName ?: "",
+                startedAtEpochMs = entity.startedAtEpochMs,
+                endedAtEpochMs = entity.endedAtEpochMs,
+                durationMinutes = entity.durationMinutes,
+                mode = entity.mode,
+                batteryBefore = entity.batteryBefore,
+                batteryAfter = entity.batteryAfter,
+                stabilityBefore = entity.stabilityBefore,
+                stabilityAfter = entity.stabilityAfter,
+                recallRating = entity.recallRating,
+                note = entity.sessionNote,
+            )
+        }
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList(),
         )
 
     override fun chapter(chapterId: Long): Flow<Chapter?> = content
@@ -149,7 +160,8 @@ class OfflineTriageRepository @Inject constructor(
                     stabilityDays = charge.stabilityAfter,
                     reviewCount = chapter.reviewCount + 1,
                     totalMinutesStudied = chapter.totalMinutesStudied + charge.durationMinutes,
-                    breadcrumbNote = charge.note?.takeIf { it.isNotBlank() },
+                    breadcrumbNote = charge.note?.takeIf { it.isNotBlank() }
+                        ?: chapter.breadcrumbNote,
                 ),
             )
             studySessionDao.insert(
@@ -169,6 +181,7 @@ class OfflineTriageRepository @Inject constructor(
             )
             saved = true
         }
+        if (saved) runCatching { widgetUpdater.refresh() }
         return saved
     }
 
@@ -235,12 +248,14 @@ class OfflineTriageRepository @Inject constructor(
                 }
             }
         }
+        if (imported > 0) runCatching { widgetUpdater.refresh() }
         return imported
     }
 
     override suspend fun updateChapterStatus(chapterIds: Set<Long>, status: ChapterStatus) {
         if (chapterIds.isEmpty()) return
         chapterDao.updateStatus(chapterIds.toList(), status)
+        runCatching { widgetUpdater.refresh() }
     }
 
     override suspend fun updateChapterTarget(chapterIds: Set<Long>, targetMinutes: Int) {
@@ -251,6 +266,56 @@ class OfflineTriageRepository @Inject constructor(
     override suspend fun exportCsv(): String {
         val snapshot = content.value
         return SyllabusCsv.encode(snapshot.subjects, snapshot.chapters)
+    }
+
+    override suspend fun startCryoFreeze(hours: Int?, note: String?) {
+        val now = clock.nowEpochMs()
+        database.withTransaction {
+            val active = cryoFreezeDao.getAll().firstOrNull {
+                it.endEpochMs == null || it.endEpochMs > now
+            }
+            if (active != null) {
+                cryoFreezeDao.upsert(active.copy(endEpochMs = now))
+            }
+            cryoFreezeDao.upsert(
+                CryoFreezeEntity(
+                    startEpochMs = now,
+                    endEpochMs = hours?.let { now + it.coerceAtLeast(1) * 3_600_000L },
+                    reasonNote = note?.trim()?.takeIf { it.isNotEmpty() },
+                ),
+            )
+        }
+        preferences.setCryoFreezeActive(true)
+        runCatching { widgetUpdater.refresh() }
+    }
+
+    override suspend fun extendCryoFreeze(hours: Int) {
+        val now = clock.nowEpochMs()
+        database.withTransaction {
+            val active = cryoFreezeDao.getAll().firstOrNull {
+                it.endEpochMs == null || it.endEpochMs > now
+            } ?: return@withTransaction
+            if (active.endEpochMs == null) return@withTransaction
+            cryoFreezeDao.upsert(
+                active.copy(endEpochMs = active.endEpochMs + hours.coerceAtLeast(1) * 3_600_000L),
+            )
+        }
+        preferences.setCryoFreezeActive(true)
+        runCatching { widgetUpdater.refresh() }
+    }
+
+    override suspend fun endCryoFreeze() {
+        val now = clock.nowEpochMs()
+        database.withTransaction {
+            val active = cryoFreezeDao.getAll().firstOrNull {
+                it.endEpochMs == null || it.endEpochMs > now
+            }
+            if (active != null) {
+                cryoFreezeDao.upsert(active.copy(endEpochMs = now))
+            }
+        }
+        preferences.setCryoFreezeActive(false)
+        runCatching { widgetUpdater.refresh() }
     }
 
     override suspend fun purgeLegacyDemoData(): Boolean {
@@ -269,6 +334,71 @@ class OfflineTriageRepository @Inject constructor(
             }
         }
         return purged
+    }
+
+    private fun buildContent(
+        subjectEntities: List<SubjectEntity>,
+        chapterEntities: List<ChapterEntity>,
+        freezeEntities: List<CryoFreezeEntity>,
+        nowEpochMs: Long,
+        prefs: UserPreferences,
+    ): StudyContent {
+        val subjects = subjectEntities.map { it.toDomain() }
+        val subjectsById = subjects.associateBy { it.id }
+        val freezes = freezeEntities.map {
+            CryoFreezeInterval(startEpochMs = it.startEpochMs, endEpochMs = it.endEpochMs)
+        }
+        val activeFreeze = freezeEntities
+            .filter { it.startEpochMs <= nowEpochMs && (it.endEpochMs == null || it.endEpochMs > nowEpochMs) }
+            .maxByOrNull { it.startEpochMs }
+            ?.let {
+                CryoFreezeStatus(
+                    startEpochMs = it.startEpochMs,
+                    endEpochMs = it.endEpochMs,
+                    isActive = true,
+                )
+            }
+        val daysUntilExam = prefs.examDateEpochMs?.let {
+            (it - nowEpochMs).toDouble() / DecayCalculator.MILLIS_PER_DAY
+        }?.toFloat()
+        val chapters = chapterEntities.mapNotNull { entity ->
+            val subject = subjectsById[entity.subjectId] ?: return@mapNotNull null
+            val crunch = DecayCalculator.examCrunchFactor(daysUntilExam, subject.examWeight)
+            val decay = DecayCalculator.snapshot(
+                lastChargedAtEpochMs = entity.lastChargedAtEpochMs,
+                nowEpochMs = nowEpochMs,
+                freezes = freezes,
+                lastBatteryLevel = entity.lastBatteryLevel,
+                status = entity.status,
+                stabilityDays = entity.stabilityDays,
+                difficultyWeight = entity.difficultyWeight,
+                examCrunchFactor = crunch,
+            )
+            Chapter(
+                id = entity.id,
+                subjectId = subject.id,
+                subjectName = subject.name,
+                subjectShortName = subject.shortName,
+                subjectColorHex = subject.colorHex,
+                unitName = entity.unitName.orEmpty(),
+                title = entity.title,
+                status = entity.status,
+                battery = decay.battery,
+                stabilityDays = entity.stabilityDays,
+                daysSinceCharge = decay.daysSinceCharge,
+                drainRatePerDay = decay.drainRatePerDay,
+                difficultyWeight = entity.difficultyWeight,
+                targetMinutes = entity.targetMinutes,
+                reviewCount = entity.reviewCount,
+                note = entity.breadcrumbNote,
+                subjectExamWeight = subject.examWeight,
+            )
+        }
+        return StudyContent(
+            subjects = subjects,
+            chapters = chapters,
+            activeFreeze = activeFreeze,
+        )
     }
 
     private fun SubjectEntity.toDomain() = Subject(

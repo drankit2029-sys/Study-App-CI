@@ -80,6 +80,7 @@ data class Chapter(
     val targetMinutes: Int,
     val reviewCount: Int,
     val note: String?,
+    val subjectExamWeight: Float = 1f,
 ) {
     val zone: Zone
         get() = when {
@@ -95,6 +96,12 @@ data class Chapter(
             difficultyWeight >= 0.95f -> "Medium"
             else -> "Light"
         }
+
+    val urgencyScore: Float
+        get() = if (status != ChapterStatus.ACTIVE) 0f
+        else (35f - battery).coerceAtLeast(0f) *
+            subjectExamWeight.coerceAtLeast(0.1f) /
+            difficultyWeight.coerceAtLeast(0.1f)
 }
 
 data class SubjectSummary(
@@ -133,3 +140,29 @@ fun List<Chapter>.toSubjectSummaries(subjects: List<Subject>): List<SubjectSumma
             lockedCount = subjectChapters.count { it.zone == Zone.LOCKED },
         )
     }
+
+data class CryoFreezeStatus(
+    val startEpochMs: Long,
+    val endEpochMs: Long?,
+    val isActive: Boolean,
+) {
+    val isIndefinite: Boolean
+        get() = endEpochMs == null
+}
+
+data class StudySessionRecord(
+    val id: Long,
+    val chapterId: Long,
+    val chapterTitle: String,
+    val subjectName: String,
+    val startedAtEpochMs: Long,
+    val endedAtEpochMs: Long,
+    val durationMinutes: Int,
+    val mode: ChargeMode,
+    val batteryBefore: Float,
+    val batteryAfter: Float,
+    val stabilityBefore: Float,
+    val stabilityAfter: Float,
+    val recallRating: Int,
+    val note: String?,
+)

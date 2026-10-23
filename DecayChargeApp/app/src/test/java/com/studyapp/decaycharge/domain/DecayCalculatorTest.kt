@@ -292,6 +292,39 @@ class DecayCalculatorTest {
     }
 
     @Test
+    fun `quick top-up growth scale softens stability gains`() {
+        assertEquals(5.8f, stabilityWithScale(scale = 0.75f), 0.0001f)
+        assertEquals(4f, stabilityWithScale(scale = 0f), 0.0001f)
+        assertEquals(6.4f, stabilityWithScale(scale = 1f), 0.0001f)
+    }
+
+    @Test
+    fun `exam crunch is neutral without an upcoming exam`() {
+        assertEquals(1f, DecayCalculator.examCrunchFactor(null, 1.2f), 0f)
+        assertEquals(1f, DecayCalculator.examCrunchFactor(31f, 1.2f), 0f)
+        assertEquals(1f, DecayCalculator.examCrunchFactor(365f, 2f), 0f)
+    }
+
+    @Test
+    fun `exam crunch scales with urgency and subject weight`() {
+        assertEquals(0.55f, DecayCalculator.examCrunchFactor(0f, 1.2f), 0.0001f)
+        assertEquals(0.73f, DecayCalculator.examCrunchFactor(0f, 0.5f), 0.0001f)
+        assertEquals(0.45f, DecayCalculator.examCrunchFactor(0f, 2f), 0.0001f)
+        assertEquals(0.775f, DecayCalculator.examCrunchFactor(15f, 1.2f), 0.0001f)
+    }
+
+    @Test
+    fun `exam crunch accelerates visible decay`() {
+        val normal = DecayCalculator.batteryLevel(
+            100f, ChapterStatus.ACTIVE, 4f, 1f, 2f,
+        )
+        val crunch = DecayCalculator.batteryLevel(
+            100f, ChapterStatus.ACTIVE, 4f, 1f, 2f, 0.55f,
+        )
+        assertEquals(true, crunch < normal)
+    }
+
+    @Test
     fun `invalid recall ratings are rejected`() {
         assertThrows(IllegalArgumentException::class.java) {
             DecayCalculator.stabilityAfterReview(4f, 1, 0, 50f, 1f)
@@ -376,5 +409,14 @@ class DecayCalculatorTest {
         recallRating = rating,
         batteryBefore = battery,
         chargeRatio = ratio,
+    )
+
+    private fun stabilityWithScale(scale: Float): Float = DecayCalculator.stabilityAfterReview(
+        oldStabilityDays = 4f,
+        reviewCount = 1,
+        recallRating = 2,
+        batteryBefore = 60f,
+        chargeRatio = 1f,
+        growthScale = scale,
     )
 }

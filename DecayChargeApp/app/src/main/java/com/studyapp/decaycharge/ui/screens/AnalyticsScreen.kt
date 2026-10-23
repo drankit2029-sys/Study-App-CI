@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.studyapp.decaycharge.domain.DecayCalculator
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChapterStatus
+import com.studyapp.decaycharge.model.StudySessionRecord
 import com.studyapp.decaycharge.model.SubjectSummary
 import com.studyapp.decaycharge.model.Zone
 import com.studyapp.decaycharge.navigation.LocalWindowSizeClass
@@ -60,6 +63,8 @@ import com.studyapp.decaycharge.ui.AnalyticsUiState
 import com.studyapp.decaycharge.ui.AnalyticsViewModel
 import com.studyapp.decaycharge.ui.components.BatteryBar
 import com.studyapp.decaycharge.ui.components.CalmCard
+import com.studyapp.decaycharge.ui.components.FilterPill
+import com.studyapp.decaycharge.ui.components.Hairline
 import com.studyapp.decaycharge.ui.components.SectionLabel
 import com.studyapp.decaycharge.ui.components.ZoneDot
 import com.studyapp.decaycharge.ui.components.zoneLabel
@@ -70,7 +75,12 @@ import com.studyapp.decaycharge.ui.theme.Muted
 import com.studyapp.decaycharge.ui.theme.Paper
 import com.studyapp.decaycharge.ui.theme.StoneLight
 import com.studyapp.decaycharge.ui.theme.ZoneAmber
+import com.studyapp.decaycharge.ui.theme.ZoneGreen
+import com.studyapp.decaycharge.ui.theme.ZoneRed
 import com.studyapp.decaycharge.ui.theme.ZoneRedSoft
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun AnalyticsScreen(
@@ -117,6 +127,48 @@ fun AnalyticsScreen(
                 key = { it.subject.id },
             ) { summary ->
                 SubjectBalanceCard(summary)
+            }
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Spacer(Modifier.height(7.dp))
+                SectionLabel(index = "03", title = "RECHARGE LOG")
+                Spacer(Modifier.height(9.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    FilterPill(
+                        label = "All",
+                        selected = state.sessionFilter == null,
+                        onClick = { viewModel.setSessionFilter(null) },
+                    )
+                    listOf(1 to "Hard", 2 to "Medium", 3 to "Easy").forEach { (rating, label) ->
+                        FilterPill(
+                            label = label,
+                            selected = state.sessionFilter == rating,
+                            onClick = { viewModel.setSessionFilter(rating) },
+                        )
+                    }
+                }
+            }
+            if (state.sessions.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = "Completed charges will appear here with their battery and stability shift.",
+                        color = Muted,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    )
+                }
+            } else {
+                items(
+                    items = state.sessions.take(30),
+                    key = { "session-${it.id}" },
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = { "session" },
+                ) { session ->
+                    SessionLogCard(session)
+                }
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 StabilityNote(state)
@@ -509,5 +561,116 @@ private fun StabilityNote(state: AnalyticsUiState) {
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun SessionLogCard(session: StudySessionRecord) {
+    val ratingColor = when (session.recallRating) {
+        1 -> ZoneRed
+        2 -> ZoneAmber
+        else -> ZoneGreen
+    }
+    val ratingLabel = when (session.recallRating) {
+        1 -> "Hard"
+        2 -> "Medium"
+        else -> "Easy"
+    }
+    val date = Instant.ofEpochMilli(session.endedAtEpochMs)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("d MMM · HH:mm"))
+    CalmCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 20.dp,
+        elevation = 3.dp,
+    ) {
+        Column(modifier = Modifier.padding(15.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = session.chapterTitle,
+                        color = Ink,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 17.sp),
+                    )
+                    Text(
+                        text = "${session.subjectName} · $date",
+                        color = Muted,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+                    )
+                }
+                Text(
+                    text = "${session.durationMinutes}m",
+                    color = Forest,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                )
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(ratingColor.copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        text = ratingLabel.uppercase(),
+                        color = ratingColor,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 7.sp,
+                            letterSpacing = 1.0.sp,
+                        ),
+                    )
+                }
+            }
+            Spacer(Modifier.height(9.dp))
+            Hairline(color = StoneLight)
+            Spacer(Modifier.height(9.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                LogMetric("BATTERY", "${session.batteryBefore.toInt()} → ${session.batteryAfter.toInt()}%")
+                LogMetric("STABILITY", "${"%.1f".format(session.stabilityBefore)}d → ${"%.1f".format(session.stabilityAfter)}d")
+                LogMetric(
+                    "MODE",
+                    when (session.mode) {
+                        com.studyapp.decaycharge.model.ChargeMode.DEEP_CHARGE -> "Deep"
+                        com.studyapp.decaycharge.model.ChargeMode.QUICK_TOP_UP -> "Top-up"
+                        com.studyapp.decaycharge.model.ChargeMode.STOPWATCH -> "Stopwatch"
+                    },
+                )
+            }
+            session.note?.takeIf { it.isNotBlank() }?.let { note ->
+                Spacer(Modifier.height(9.dp))
+                Text(
+                    text = "“$note”",
+                    color = Muted,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = MaterialTheme.typography.headlineSmall.fontFamily,
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                    ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogMetric(label: String, value: String) {
+    Column {
+        Text(
+            text = value,
+            color = Ink,
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 10.sp),
+        )
+        Text(
+            text = label,
+            color = Muted,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 6.sp, letterSpacing = 1.0.sp),
+        )
     }
 }

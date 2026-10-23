@@ -141,6 +141,7 @@ object DecayCalculator {
         recallRating: Int,
         batteryBefore: Float,
         chargeRatio: Float,
+        growthScale: Float = 1f,
     ): Float {
         require(recallRating in 1..3) { "Recall rating must be 1, 2, or 3." }
         if (reviewCount <= 0) {
@@ -163,8 +164,18 @@ object DecayCalculator {
         val multiplier = if (recallRating == 2) 1.6f else 2.2f
         val timingFactor = if (batteryBefore > 80f) 0.35f else 1f
         val ratio = chargeRatio.coerceIn(0.25f, 1f)
-        val updated = oldStability * (1f + (multiplier - 1f) * ratio * timingFactor)
+        val growth = (multiplier - 1f) * ratio * timingFactor * growthScale.coerceIn(0f, 1f)
+        val updated = oldStability * (1f + growth)
         return min(180f, updated)
+    }
+
+    fun examCrunchFactor(daysUntilExam: Float?, examWeight: Float): Float {
+        if (daysUntilExam == null) return 1f
+        val days = daysUntilExam.coerceAtLeast(0f)
+        if (days > 30f) return 1f
+        val urgency = 1f - (days / 30f)
+        val weight = (examWeight.coerceIn(0.5f, 2f) / 1.2f).coerceIn(0.6f, 1.4f)
+        return (1f - 0.45f * urgency * weight).coerceIn(0.45f, 1f)
     }
 
     fun drainRatePerDay(

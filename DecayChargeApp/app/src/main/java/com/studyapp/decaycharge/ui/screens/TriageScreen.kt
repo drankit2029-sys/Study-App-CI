@@ -1,6 +1,7 @@
 package com.studyapp.decaycharge.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,18 +27,28 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +60,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.studyapp.decaycharge.model.Chapter
+import com.studyapp.decaycharge.domain.PlannedCharge
+import com.studyapp.decaycharge.domain.PlannedChargeKind
 import com.studyapp.decaycharge.model.ChapterStatus
+import com.studyapp.decaycharge.model.CryoFreezeStatus
 import com.studyapp.decaycharge.model.Zone
 import com.studyapp.decaycharge.model.ZoneFilter
 import com.studyapp.decaycharge.navigation.LocalWindowSizeClass
@@ -74,25 +88,35 @@ import com.studyapp.decaycharge.ui.components.zoneLabel
 import com.studyapp.decaycharge.ui.components.zoneSoftColor
 import com.studyapp.decaycharge.ui.theme.Border
 import com.studyapp.decaycharge.ui.theme.Forest
+import com.studyapp.decaycharge.ui.theme.Ice
+import com.studyapp.decaycharge.ui.theme.IceSoft
 import com.studyapp.decaycharge.ui.theme.Ink
 import com.studyapp.decaycharge.ui.theme.Ivory
 import com.studyapp.decaycharge.ui.theme.MintLight
 import com.studyapp.decaycharge.ui.theme.Muted
 import com.studyapp.decaycharge.ui.theme.Paper
+import com.studyapp.decaycharge.ui.theme.Parchment
 import com.studyapp.decaycharge.ui.theme.Stone
 import com.studyapp.decaycharge.ui.theme.StoneLight
 import com.studyapp.decaycharge.ui.theme.White
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TriageScreen(
     viewModel: TriageViewModel,
     onOpenCharger: (Long) -> Unit,
+    onOpenQuickCharge: (Long) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val windowSizeClass = LocalWindowSizeClass.current
     val columns = if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded) 2 else 1
     val horizontalPadding = if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact) 24.dp else 32.dp
     val snackbarHostState = remember { SnackbarHostState() }
+    var showFreezeSheet by rememberSaveable { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         BotanicalBranch(
@@ -124,6 +148,25 @@ fun TriageScreen(
                     ReadinessCard(
                         state = state,
                         onOpenCharger = onOpenCharger,
+                        onOpenFreeze = { showFreezeSheet = true },
+                        onOpenSettings = onOpenSettings,
+                    )
+                }
+                state.activeFreeze?.let { freeze ->
+                    item(span = { GridItemSpan(maxLineSpan) }, contentType = "freeze") {
+                        CryoFreezeBanner(
+                            freeze = freeze,
+                            onOpen = { showFreezeSheet = true },
+                        )
+                    }
+                }
+                item(span = { GridItemSpan(maxLineSpan) }, contentType = "planner") {
+                    PlannerCard(
+                        state = state,
+                        onBudget = viewModel::setDailyBudget,
+                        onOpenCharger = onOpenCharger,
+                        onOpenQuickCharge = onOpenQuickCharge,
+                        onUnlock = viewModel::unlockChapter,
                     )
                 }
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "filters") {
@@ -147,7 +190,13 @@ fun TriageScreen(
                 order.forEach { zone ->
                     val zoneChapters = state.chapters
                         .filter { it.zone == zone }
-                        .sortedBy { it.battery }
+                        .let { zoneList ->
+                            if (zone == Zone.RED || zone == Zone.AMBER) {
+                                zoneList.sortedByDescending { it.urgencyScore }
+                            } else {
+                                zoneList.sortedBy { it.battery }
+                            }
+                        }
                     if (zoneChapters.isNotEmpty()) {
                         item(
                             key = "section-${zone.name}",
@@ -165,6 +214,7 @@ fun TriageScreen(
                             ChapterCard(
                                 chapter = chapter,
                                 onOpenCharger = onOpenCharger,
+                                onOpenQuickCharge = onOpenQuickCharge,
                             )
                         }
                     }
@@ -173,6 +223,29 @@ fun TriageScreen(
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "footer") {
                     FooterNote()
                 }
+            }
+        }
+        if (showFreezeSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showFreezeSheet = false },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                containerColor = Paper,
+            ) {
+                CryoFreezeSheet(
+                    freeze = state.activeFreeze,
+                    onFreeze = { hours ->
+                        viewModel.startFreeze(hours)
+                        showFreezeSheet = false
+                    },
+                    onExtend = { hours ->
+                        viewModel.extendFreeze(hours)
+                        showFreezeSheet = false
+                    },
+                    onEnd = {
+                        viewModel.endFreeze()
+                        showFreezeSheet = false
+                    },
+                )
             }
         }
         SnackbarHost(
@@ -201,6 +274,8 @@ fun TriageScreen(
 private fun ReadinessCard(
     state: TriageUiState,
     onOpenCharger: (Long) -> Unit,
+    onOpenFreeze: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     CalmCard(
         modifier = Modifier.fillMaxWidth(),
@@ -208,7 +283,27 @@ private fun ReadinessCard(
         elevation = 9.dp,
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            SectionLabel(index = "01", title = "SYLLABUS READINESS")
+            SectionLabel(index = "01", title = "SYLLABUS READINESS") {
+                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    CalmIconButton(
+                        icon = Icons.Rounded.AcUnit,
+                        contentDescription = "Cryo-Freeze",
+                        onClick = onOpenFreeze,
+                        size = 34.dp,
+                        iconSize = 15.dp,
+                        tint = if (state.activeFreeze != null) Ice else Forest,
+                        filled = false,
+                    )
+                    CalmIconButton(
+                        icon = Icons.Rounded.Settings,
+                        contentDescription = "Settings",
+                        onClick = onOpenSettings,
+                        size = 34.dp,
+                        iconSize = 15.dp,
+                        filled = false,
+                    )
+                }
+            }
             Spacer(Modifier.height(18.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -486,6 +581,7 @@ private fun ZoneSectionHeader(
 private fun ChapterCard(
     chapter: Chapter,
     onOpenCharger: (Long) -> Unit,
+    onOpenQuickCharge: (Long) -> Unit,
 ) {
     val accent = zoneColor(chapter.zone)
     CalmCard(
@@ -555,6 +651,7 @@ private fun ChapterCard(
                 )
                 MetaText(label = "S ${chapter.stabilityDays.formatOne()}D")
                 MetaText(label = chapter.difficultyLabel.uppercase())
+                MetaText(label = "${"%.1f".format(chapter.drainRatePerDay)}%/DAY")
             }
             if (!chapter.note.isNullOrBlank()) {
                 Spacer(Modifier.height(13.dp))
@@ -605,7 +702,13 @@ private fun ChapterCard(
                     } else {
                         "Charge · ${chapter.targetMinutes}m"
                     },
-                    onClick = { onOpenCharger(chapter.id) },
+                    onClick = {
+                        if (chapter.zone == Zone.AMBER) {
+                            onOpenQuickCharge(chapter.id)
+                        } else {
+                            onOpenCharger(chapter.id)
+                        }
+                    },
                     trailingIcon = Icons.Rounded.ArrowForward,
                     variant = if (chapter.zone == Zone.RED) {
                         CalmButtonVariant.Primary
@@ -651,3 +754,318 @@ private fun FooterNote() {
 }
 
 private fun Float.formatOne(): String = ((this * 10).toInt() / 10f).toString()
+
+
+@Composable
+private fun PlannerCard(
+    state: TriageUiState,
+    onBudget: (Int) -> Unit,
+    onOpenCharger: (Long) -> Unit,
+    onOpenQuickCharge: (Long) -> Unit,
+    onUnlock: (Long) -> Unit,
+) {
+    val totalMinutes = state.plan.sumOf { it.minutes }
+    CalmCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 26.dp,
+        elevation = 5.dp,
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            SectionLabel(index = "02", title = "TODAY'S CHARGING PLAYLIST") {
+                Text(
+                    text = "${totalMinutes}m / ${state.dailyBudgetMinutes}m",
+                    color = Forest,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 8.sp,
+                        letterSpacing = 0.8.sp,
+                    ),
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = when {
+                    state.daysUntilExam == null -> "Set an exam date in Settings to sharpen priorities."
+                    state.daysUntilExam <= 30 ->
+                        "Exam in ${state.daysUntilExam} days · crunch scaling is active."
+                    else -> "Exam in ${state.daysUntilExam} days."
+                },
+                color = Muted,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+            ) {
+                listOf(60, 120, 180, 240, 360).forEach { minutes ->
+                    FilterPill(
+                        label = if (minutes < 60) "${minutes}m" else "${minutes / 60}h",
+                        selected = state.dailyBudgetMinutes == minutes,
+                        onClick = { onBudget(minutes) },
+                    )
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            if (state.plan.isEmpty()) {
+                Text(
+                    text = "No charge is needed today. Let the garden rest.",
+                    color = Muted,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                )
+            } else {
+                state.plan.take(3).forEachIndexed { index, planned ->
+                    if (index > 0) {
+                        Spacer(Modifier.height(5.dp))
+                        Hairline(color = Border)
+                        Spacer(Modifier.height(5.dp))
+                    }
+                    PlannedRow(
+                        planned = planned,
+                        onOpenCharger = onOpenCharger,
+                        onOpenQuickCharge = onOpenQuickCharge,
+                        onUnlock = onUnlock,
+                    )
+                }
+                if (state.plan.size > 3) {
+                    Spacer(Modifier.height(7.dp))
+                    Text(
+                        text = "+${state.plan.size - 3} more planned charges",
+                        color = Muted,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlannedRow(
+    planned: PlannedCharge,
+    onOpenCharger: (Long) -> Unit,
+    onOpenQuickCharge: (Long) -> Unit,
+    onUnlock: (Long) -> Unit,
+) {
+    val chapter = planned.chapter
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable {
+                when (planned.kind) {
+                    PlannedChargeKind.AMBER_TOP_UP -> onOpenQuickCharge(chapter.id)
+                    PlannedChargeKind.UNLOCK -> onUnlock(chapter.id)
+                    PlannedChargeKind.RED_CHARGE -> onOpenCharger(chapter.id)
+                }
+            }
+            .padding(vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .background(zoneColor(chapter.zone), CircleShape),
+        )
+        Spacer(Modifier.width(9.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = chapter.title,
+                color = Ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 15.sp),
+            )
+            Text(
+                text = when (planned.kind) {
+                    PlannedChargeKind.RED_CHARGE -> "Priority charge"
+                    PlannedChargeKind.AMBER_TOP_UP -> "Quick top-up"
+                    PlannedChargeKind.UNLOCK -> "Unlock one new chapter"
+                },
+                color = Muted,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+            )
+        }
+        Text(
+            text = "${planned.minutes}m",
+            color = Forest,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        )
+        Spacer(Modifier.width(5.dp))
+        Icon(
+            imageVector = Icons.Rounded.ArrowForward,
+            contentDescription = "Open ${chapter.title}",
+            tint = Forest,
+            modifier = Modifier.size(14.dp),
+        )
+    }
+}
+
+@Composable
+private fun CryoFreezeBanner(
+    freeze: CryoFreezeStatus,
+    onOpen: () -> Unit,
+) {
+    val detail = freeze.endEpochMs?.let { end ->
+        val formatter = DateTimeFormatter.ofPattern("d MMM, HH:mm")
+        "All decay paused until ${Instant.ofEpochMilli(end).atZone(ZoneId.systemDefault()).format(formatter)}."
+    } ?: "All decay paused until you end the freeze."
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(IceSoft)
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.AcUnit,
+            contentDescription = null,
+            tint = Ice,
+            modifier = Modifier.size(17.dp),
+        )
+        Spacer(Modifier.width(9.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "CRYO-FREEZE ACTIVE",
+                color = Ice,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 7.sp,
+                    letterSpacing = 1.4.sp,
+                ),
+            )
+            Text(
+                text = detail,
+                color = Ink,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+            )
+        }
+        Icon(
+            imageVector = Icons.Rounded.ArrowForward,
+            contentDescription = "Manage Cryo-Freeze",
+            tint = Ice,
+            modifier = Modifier.size(15.dp),
+        )
+    }
+}
+
+@Composable
+private fun CryoFreezeSheet(
+    freeze: CryoFreezeStatus?,
+    onFreeze: (Int?) -> Unit,
+    onExtend: (Int) -> Unit,
+    onEnd: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 24.dp, bottom = 28.dp),
+    ) {
+        Eyebrow("CRYO-FREEZE", color = Ice)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = if (freeze == null) "Pause the garden." else "The garden is resting.",
+            color = Ink,
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 30.sp),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = if (freeze == null) {
+                "Vacation, illness, or a deliberate break. Frozen hours are subtracted from every chapter's decay."
+            } else {
+                "No battery loses charge while Cryo-Freeze is active. You can end it at any time."
+            },
+            color = Muted,
+            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+        )
+        Spacer(Modifier.height(18.dp))
+        if (freeze == null) {
+            FreezeChoice(
+                title = "Freeze for 24 hours",
+                subtitle = "A short recovery day.",
+                onClick = { onFreeze(24) },
+            )
+            Spacer(Modifier.height(8.dp))
+            FreezeChoice(
+                title = "Freeze for 3 days",
+                subtitle = "A long weekend or sick leave.",
+                onClick = { onFreeze(72) },
+            )
+            Spacer(Modifier.height(8.dp))
+            FreezeChoice(
+                title = "Indefinite manual freeze",
+                subtitle = "Stay paused until you return.",
+                onClick = { onFreeze(null) },
+            )
+        } else {
+            CalmButton(
+                label = "End Cryo-Freeze",
+                onClick = onEnd,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (!freeze.isIndefinite) {
+                Spacer(Modifier.height(9.dp))
+                FreezeChoice(
+                    title = "Extend by 24 hours",
+                    subtitle = "Adds a day to the current freeze.",
+                    onClick = { onExtend(24) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FreezeChoice(
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(17.dp))
+            .background(Parchment.copy(alpha = 0.7f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .background(IceSoft, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.AcUnit,
+                contentDescription = null,
+                tint = Ice,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Spacer(Modifier.width(11.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = Ink,
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = 17.sp),
+            )
+            Text(
+                text = subtitle,
+                color = Muted,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+            )
+        }
+        Icon(
+            imageVector = Icons.Rounded.ArrowForward,
+            contentDescription = null,
+            tint = Ice,
+            modifier = Modifier.size(15.dp),
+        )
+    }
+}

@@ -60,13 +60,19 @@ fun BatteryCell(
         label = "wavePhase",
     )
     val levelColor = zoneColor(zone)
+    val zoneLabel = when (zone) {
+        Zone.RED -> "Red Zone"
+        Zone.AMBER -> "Amber Zone"
+        Zone.GREEN -> "Green Zone"
+        Zone.LOCKED -> "Locked"
+    }
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .semantics {
-                    contentDescription = "$title battery at ${progress.toInt()} percent"
+                    contentDescription = "$title, $zoneLabel, battery at ${progress.toInt()} percent"
                 },
         ) {
             val housingWidth = size.width * 0.72f

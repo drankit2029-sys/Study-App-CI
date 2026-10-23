@@ -41,21 +41,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -114,12 +116,18 @@ fun ChargerScreen(
     val split = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact ||
         windowSizeClass.heightSizeClass == WindowHeightSizeClass.Compact
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    val view = LocalView.current
     val handleBack = {
         if (viewModel.requestBack()) onBack()
     }
 
     BackHandler { handleBack() }
+
+    val keepScreenAwake = state.keepScreenOn && state.isRunning
+    DisposableEffect(keepScreenAwake) {
+        view.keepScreenOn = keepScreenAwake
+        onDispose { view.keepScreenOn = false }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.snackbarMessages.collect { message ->
@@ -184,6 +192,7 @@ fun ChargerScreen(
                                 state = state,
                                 chapter = chapter,
                                 onSelectRating = viewModel::selectRating,
+                                onNote = viewModel::setNote,
                                 onSave = {
                                     viewModel.saveCompletedCharge(onBack)
                                 },
@@ -196,6 +205,7 @@ fun ChargerScreen(
                                 onNote = viewModel::setNote,
                                 onToggleTimer = viewModel::toggleTimer,
                                 onEndEarly = viewModel::endEarly,
+                                onKeepScreenOn = viewModel::setKeepScreenOn,
                             )
                         }
                         Spacer(Modifier.height(20.dp))
@@ -222,6 +232,7 @@ fun ChargerScreen(
                             state = state,
                             chapter = chapter,
                             onSelectRating = viewModel::selectRating,
+                            onNote = viewModel::setNote,
                             onSave = {
                                 viewModel.saveCompletedCharge(onBack)
                             },
@@ -234,6 +245,7 @@ fun ChargerScreen(
                             onNote = viewModel::setNote,
                             onToggleTimer = viewModel::toggleTimer,
                             onEndEarly = viewModel::endEarly,
+                            onKeepScreenOn = viewModel::setKeepScreenOn,
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -414,13 +426,16 @@ private fun ChargeStage(
         progress < 70f -> Zone.AMBER
         else -> Zone.GREEN
     }
+    val stopwatch = state.mode == ChargeMode.STOPWATCH
     val remaining = when {
+        state.isForThisChapter && stopwatch -> state.active?.elapsedSeconds ?: 0
         state.isForThisChapter -> state.active?.remainingSeconds ?: 0
         state.mode == ChargeMode.QUICK_TOP_UP -> 15 * 60
         else -> chapter.targetMinutes * 60
     }
     val stageLabel = when {
         state.isComplete -> "CHARGE HELD"
+        state.isRunning && stopwatch -> "FLOW STATE"
         state.isRunning -> "CHARGING"
         state.active?.isRunning == false && state.isForThisChapter -> "PAUSED"
         else -> "READY TO CHARGE"
@@ -511,7 +526,7 @@ private fun ChargeStage(
                 ),
             )
             Text(
-                text = if (state.isComplete) "CHARGE COMPLETE" else "REMAINING",
+                text = if (state.isComplete) "CHARGE COMPLETE" else if (stopwatch) "ELAPSED" else "REMAINING",
                 color = Muted,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 7.sp,
@@ -525,7 +540,14 @@ private fun ChargeStage(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                StageMetric(label = "MODE", value = if (state.mode == ChargeMode.DEEP_CHARGE) "Deep" else "Top-Up")
+                StageMetric(
+                    label = "MODE",
+                    value = when (state.mode) {
+                        ChargeMode.DEEP_CHARGE -> "Deep"
+                        ChargeMode.QUICK_TOP_UP -> "Top-Up"
+                        ChargeMode.STOPWATCH -> "Stopwatch"
+                    },
+                )
                 StageMetric(label = "STABILITY", value = "${"%.1f".format(chapter.stabilityDays)}d")
                 StageMetric(label = "TARGET", value = "${state.mode.targetMinutes(chapter)}m")
             }
@@ -563,6 +585,7 @@ private fun SetupPanel(
     onNote: (String) -> Unit,
     onToggleTimer: () -> Unit,
     onEndEarly: () -> Unit,
+    onKeepScreenOn: (Boolean) -> Unit,
 ) {
     CalmCard(
         modifier = Modifier.fillMaxWidth(),
@@ -583,6 +606,28 @@ private fun SetupPanel(
                 value = state.note,
                 onValueChange = onNote,
             )
+            Spacer(Modifier.height(13.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Keep screen awake",
+                        color = Ink,
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 16.sp),
+                    )
+                    Text(
+                        text = "Useful on a desk stand while charging.",
+                        color = Muted,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 9.sp),
+                    )
+                }
+                Switch(
+                    checked = state.keepScreenOn,
+                    onCheckedChange = onKeepScreenOn,
+                )
+            }
             Spacer(Modifier.height(17.dp))
             val running = state.isRunning
             CalmButton(
@@ -590,7 +635,11 @@ private fun SetupPanel(
                     state.isComplete -> "Charge complete"
                     state.isForThisChapter && running -> "Pause charge"
                     state.isForThisChapter -> "Resume charge"
-                    else -> "Begin ${if (state.mode == ChargeMode.DEEP_CHARGE) "deep" else "top-up"} charge"
+                    else -> when (state.mode) {
+                        ChargeMode.DEEP_CHARGE -> "Begin deep charge"
+                        ChargeMode.QUICK_TOP_UP -> "Begin top-up charge"
+                        ChargeMode.STOPWATCH -> "Begin stopwatch"
+                    }
                 },
                 onClick = onToggleTimer,
                 leadingIcon = if (running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
@@ -621,7 +670,7 @@ private fun SetupPanel(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Leaving a running charge keeps it alive in a mini charger while the app stays open.",
+                text = "A running charge continues in the live notification, even in the background.",
                 color = Muted,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 9.sp,
@@ -661,6 +710,14 @@ private fun ModeSelector(
             selected = mode == ChargeMode.QUICK_TOP_UP,
             enabled = enabled && quickEnabled,
             onClick = { onMode(ChargeMode.QUICK_TOP_UP) },
+            modifier = Modifier.weight(1f),
+        )
+        ModeOption(
+            label = "Stopwatch",
+            caption = "Count up",
+            selected = mode == ChargeMode.STOPWATCH,
+            enabled = enabled,
+            onClick = { onMode(ChargeMode.STOPWATCH) },
             modifier = Modifier.weight(1f),
         )
     }
@@ -772,6 +829,7 @@ private fun RatingPanel(
     state: ChargerUiState,
     chapter: Chapter,
     onSelectRating: (Int) -> Unit,
+    onNote: (String) -> Unit,
     onSave: () -> Unit,
 ) {
     val progress = state.active?.progress ?: 1f
@@ -782,6 +840,7 @@ private fun RatingPanel(
         recallRating = rating,
         batteryBefore = batteryBefore,
         chargeRatio = progress,
+        growthScale = if (state.active?.mode == ChargeMode.QUICK_TOP_UP) 0.75f else 1f,
     )
     val ratings = listOf(
         Triple(1, "Hard", projectedStability(1)),
@@ -874,6 +933,11 @@ private fun RatingPanel(
                     }
                 }
             }
+            Spacer(Modifier.height(15.dp))
+            NoteField(
+                value = state.note,
+                onValueChange = onNote,
+            )
             Spacer(Modifier.height(15.dp))
             CalmButton(
                 label = "Save charge",

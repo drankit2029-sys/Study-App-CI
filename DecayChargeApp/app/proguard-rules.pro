@@ -1,0 +1,3 @@
+-keep class com.studyapp.decaycharge.** { *; }
+-keepattributes *Annotation*, InnerClasses
+-dontwarn kotlinx.serialization.**

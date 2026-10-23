@@ -14,6 +14,7 @@ import com.studyapp.decaycharge.domain.SystemAppClock
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
@@ -56,4 +57,11 @@ object DatabaseModule {
     @Provides
     fun provideCryoFreezeDao(database: DecayChargeDatabase): CryoFreezeDao =
         database.cryoFreezeDao()
+}
+
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface WidgetEntryPoint {
+    fun triageRepository(): TriageRepository
 }

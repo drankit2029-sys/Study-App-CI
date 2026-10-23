@@ -3,6 +3,8 @@ package com.studyapp.decaycharge.ui
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.studyapp.decaycharge.data.prefs.UserPreferences
+import com.studyapp.decaycharge.data.prefs.UserPreferencesRepository
 import com.studyapp.decaycharge.data.repository.CompletedCharge
 import com.studyapp.decaycharge.data.repository.TriageRepository
 import com.studyapp.decaycharge.domain.ActiveChargeController
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 data class ChargerUiState(
     val chapter: Chapter? = null,
@@ -31,6 +34,7 @@ data class ChargerUiState(
     val showDiscardDialog: Boolean = false,
     val selectedRating: Int? = null,
     val isSaving: Boolean = false,
+    val keepScreenOn: Boolean = true,
 ) {
     val isForThisChapter: Boolean
         get() = active != null && chapter != null && active.chapterId == chapter.id
@@ -61,11 +65,20 @@ class ChargerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: TriageRepository,
     private val controller: ActiveChargeController,
+    private val preferences: UserPreferencesRepository,
     private val clock: AppClock,
 ) : ViewModel() {
     private val chapterId: Long = checkNotNull(savedStateHandle["chapterId"])
     private val chapterFlow = repository.chapter(chapterId)
-    private val controls = MutableStateFlow(ChargerControls())
+    private val controls = MutableStateFlow(
+        ChargerControls(
+            mode = if (savedStateHandle.get<Boolean>("quickTopUp") == true) {
+                ChargeMode.QUICK_TOP_UP
+            } else {
+                ChargeMode.DEEP_CHARGE
+            },
+        ),
+    )
     private val messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
 
     val snackbarMessages: SharedFlow<String> = messages
@@ -74,7 +87,8 @@ class ChargerViewModel @Inject constructor(
         controls,
         controller.state,
         chapterFlow,
-    ) { state, active, chapter ->
+        preferences.preferences,
+    ) { state, active, chapter, prefs ->
         ChargerUiState(
             chapter = chapter,
             mode = if (active?.chapterId == chapterId) active.mode else state.mode,
@@ -84,6 +98,7 @@ class ChargerViewModel @Inject constructor(
             showDiscardDialog = state.showDiscardDialog,
             selectedRating = state.selectedRating,
             isSaving = state.isSaving,
+            keepScreenOn = prefs.keepScreenOn,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -98,6 +113,10 @@ class ChargerViewModel @Inject constructor(
 
     fun setNote(note: String) {
         controls.value = controls.value.copy(note = note, noteEdited = true)
+    }
+
+    fun setKeepScreenOn(enabled: Boolean) {
+        viewModelScope.launch { preferences.setKeepScreenOn(enabled) }
     }
 
     fun toggleTimer() {
@@ -192,13 +211,15 @@ class ChargerViewModel @Inject constructor(
             return
         }
 
-        val elapsedMinutes = active.elapsedSeconds / 60f
         val targetMinutes = (active.targetSeconds / 60).coerceAtLeast(1)
+        val chargedSeconds = min(active.elapsedSeconds, active.targetSeconds)
+        val elapsedMinutes = chargedSeconds / 60f
         val batteryAfter = DecayCalculator.rechargedBattery(
             currentBattery = active.startBattery,
             elapsedMinutes = elapsedMinutes,
             targetMinutes = targetMinutes,
         )
+        val growthScale = if (active.mode == ChargeMode.QUICK_TOP_UP) 0.75f else 1f
         val completedCharge = CompletedCharge(
             chapterId = chapterId,
             mode = active.mode,
@@ -214,6 +235,7 @@ class ChargerViewModel @Inject constructor(
                 recallRating = rating,
                 batteryBefore = active.startBattery,
                 chargeRatio = active.progress,
+                growthScale = growthScale,
             ),
             recallRating = rating,
             note = current.note.trim().takeIf { it.isNotEmpty() },
