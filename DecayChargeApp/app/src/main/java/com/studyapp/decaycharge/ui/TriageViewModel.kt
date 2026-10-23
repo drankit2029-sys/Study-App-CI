@@ -48,7 +48,7 @@ class TriageViewModel @Inject constructor(
         filter,
     ) { content, selectedFilter ->
         val subjects = content.subjects
-        val chapters = content.chapters
+        val chapters = content.chapters.filter { it.status != ChapterStatus.ARCHIVED }
         TriageUiState(
             readiness = chapters.weightedReadiness(subjects),
             chapters = chapters,

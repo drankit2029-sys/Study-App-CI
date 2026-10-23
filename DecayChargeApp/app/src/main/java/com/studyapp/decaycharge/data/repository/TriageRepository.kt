@@ -2,16 +2,20 @@ package com.studyapp.decaycharge.data.repository
 
 import androidx.room.withTransaction
 import com.studyapp.decaycharge.data.local.ChapterDao
+import com.studyapp.decaycharge.data.local.ChapterEntity
 import com.studyapp.decaycharge.data.local.CryoFreezeDao
 import com.studyapp.decaycharge.data.local.DecayChargeDatabase
 import com.studyapp.decaycharge.data.local.StudySessionDao
 import com.studyapp.decaycharge.data.local.StudySessionEntity
 import com.studyapp.decaycharge.data.local.SubjectDao
 import com.studyapp.decaycharge.data.local.SubjectEntity
+import com.studyapp.decaycharge.data.importer.SyllabusCsv
+import com.studyapp.decaycharge.data.importer.SyllabusDraft
 import com.studyapp.decaycharge.domain.AppClock
 import com.studyapp.decaycharge.domain.CryoFreezeInterval
 import com.studyapp.decaycharge.domain.DecayCalculator
 import com.studyapp.decaycharge.model.Chapter
+import com.studyapp.decaycharge.model.ChapterStatus
 import com.studyapp.decaycharge.model.ChargeMode
 import com.studyapp.decaycharge.model.Subject
 import javax.inject.Inject
@@ -55,6 +59,11 @@ interface TriageRepository {
     val content: StateFlow<StudyContent>
     fun chapter(chapterId: Long): Flow<Chapter?>
     suspend fun saveCompletedCharge(charge: CompletedCharge): Boolean
+    suspend fun importSyllabus(draft: SyllabusDraft): Int
+    suspend fun updateChapterStatus(chapterIds: Set<Long>, status: ChapterStatus)
+    suspend fun updateChapterTarget(chapterIds: Set<Long>, targetMinutes: Int)
+    suspend fun exportCsv(): String
+    suspend fun purgeLegacyDemoData(): Boolean
 }
 
 @Singleton
@@ -163,6 +172,105 @@ class OfflineTriageRepository @Inject constructor(
         return saved
     }
 
+
+    override suspend fun importSyllabus(draft: SyllabusDraft): Int {
+        val selected = draft.selectedOnly()
+        if (selected.subjects.isEmpty()) return 0
+        var imported = 0
+        database.withTransaction {
+            val existingSubjects = subjectDao.getAll()
+                .associateByTo(mutableMapOf()) { it.name.trim().lowercase() }
+            val existingChapters = chapterDao.getAll()
+                .mapTo(mutableSetOf()) {
+                    Triple(it.subjectId, it.unitName?.trim()?.lowercase(), it.title.trim().lowercase())
+                }
+            var nextSortOrder = (existingSubjects.values.maxOfOrNull { it.sortOrder } ?: -1) + 1
+            val now = clock.nowEpochMs()
+
+            selected.subjects.forEach { subject ->
+                val subjectKey = subject.name.trim().lowercase()
+                val existingSubject = existingSubjects[subjectKey]
+                val subjectId = if (existingSubject != null) {
+                    existingSubject.id
+                } else {
+                    val entity = SubjectEntity(
+                        name = subject.name.trim(),
+                        colorHex = subject.colorHex,
+                        examWeight = subject.examWeight.coerceIn(0.1f, 10f),
+                        sortOrder = nextSortOrder,
+                        createdAtEpochMs = now,
+                    )
+                    val id = subjectDao.upsert(entity)
+                    existingSubjects[subjectKey] = entity.copy(id = id)
+                    nextSortOrder += 1
+                    id
+                }
+
+                subject.chapters.forEach { chapter ->
+                    val chapterKey = Triple(
+                        subjectId,
+                        chapter.unitName?.trim()?.lowercase(),
+                        chapter.title.trim().lowercase(),
+                    )
+                    if (chapterKey !in existingChapters) {
+                        chapterDao.upsert(
+                            ChapterEntity(
+                                subjectId = subjectId,
+                                unitName = chapter.unitName?.trim()?.ifBlank { null },
+                                title = chapter.title.trim(),
+                                status = ChapterStatus.ACTIVE,
+                                difficultyWeight = chapter.difficulty.weight,
+                                targetMinutes = chapter.targetMinutes.coerceIn(5, 240),
+                                lastChargedAtEpochMs = null,
+                                lastBatteryLevel = 0f,
+                                stabilityDays = 3f,
+                                reviewCount = 0,
+                                totalMinutesStudied = 0,
+                                breadcrumbNote = null,
+                            ),
+                        )
+                        existingChapters += chapterKey
+                        imported += 1
+                    }
+                }
+            }
+        }
+        return imported
+    }
+
+    override suspend fun updateChapterStatus(chapterIds: Set<Long>, status: ChapterStatus) {
+        if (chapterIds.isEmpty()) return
+        chapterDao.updateStatus(chapterIds.toList(), status)
+    }
+
+    override suspend fun updateChapterTarget(chapterIds: Set<Long>, targetMinutes: Int) {
+        if (chapterIds.isEmpty()) return
+        chapterDao.updateTargetMinutes(chapterIds.toList(), targetMinutes.coerceIn(5, 240))
+    }
+
+    override suspend fun exportCsv(): String {
+        val snapshot = content.value
+        return SyllabusCsv.encode(snapshot.subjects, snapshot.chapters)
+    }
+
+    override suspend fun purgeLegacyDemoData(): Boolean {
+        var purged = false
+        database.withTransaction {
+            val subjects = subjectDao.getAll()
+            val chapters = chapterDao.getAll()
+            val matchesSubjects = subjects.size == LEGACY_DEMO_SUBJECTS.size &&
+                subjects.all { LEGACY_DEMO_SUBJECTS[it.id] == it.name }
+            val matchesChapters = chapters.size == LEGACY_DEMO_CHAPTERS.size &&
+                chapters.all { LEGACY_DEMO_CHAPTERS[it.id] == it.title }
+            if (matchesSubjects && matchesChapters) {
+                chapterDao.deleteByIds(chapters.map { it.id })
+                subjectDao.deleteByIds(subjects.map { it.id })
+                purged = true
+            }
+        }
+        return purged
+    }
+
     private fun SubjectEntity.toDomain() = Subject(
         id = id,
         name = name,
@@ -188,5 +296,29 @@ class OfflineTriageRepository @Inject constructor(
     private companion object {
         const val TICKER_INTERVAL_MS = 60_000L
         const val DEFAULT_SUBJECT_COLOR = 0xFF0F5132
+
+        val LEGACY_DEMO_SUBJECTS = mapOf(
+            1L to "Physiology",
+            2L to "Pathology",
+            3L to "Pharmacology",
+            4L to "Anatomy",
+            5L to "Biochemistry",
+        )
+
+        val LEGACY_DEMO_CHAPTERS = mapOf(
+            1L to "Renal Regulation",
+            2L to "Coronary Circulation",
+            3L to "Cardiac Cycle",
+            4L to "Acute Inflammation",
+            5L to "Neoplasia Classification",
+            6L to "Cell Injury",
+            7L to "Beta Blockers",
+            8L to "Antimicrobial Spectrum",
+            9L to "Pharmacokinetics",
+            10L to "Brachial Plexus",
+            11L to "Cranial Nerves",
+            12L to "Glycolysis Regulation",
+            13L to "Cardiovascular Pathology",
+        )
     }
 }

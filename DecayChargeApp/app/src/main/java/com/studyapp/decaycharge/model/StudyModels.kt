@@ -35,6 +35,26 @@ enum class ZoneFilter(val label: String) {
     }
 }
 
+enum class SyllabusFilter(val label: String) {
+    ALL("All"),
+    RED("Red"),
+    AMBER("Amber"),
+    GREEN("Green"),
+    LOCKED("Locked"),
+    HEAVY("Heavy"),
+    ARCHIVED("Archived");
+
+    fun accepts(chapter: Chapter): Boolean = when (this) {
+        ALL -> chapter.status != ChapterStatus.ARCHIVED
+        RED -> chapter.status != ChapterStatus.ARCHIVED && chapter.zone == Zone.RED
+        AMBER -> chapter.status != ChapterStatus.ARCHIVED && chapter.zone == Zone.AMBER
+        GREEN -> chapter.status != ChapterStatus.ARCHIVED && chapter.zone == Zone.GREEN
+        LOCKED -> chapter.status != ChapterStatus.ARCHIVED && chapter.zone == Zone.LOCKED
+        HEAVY -> chapter.status != ChapterStatus.ARCHIVED && chapter.difficultyWeight >= 1.15f
+        ARCHIVED -> chapter.status == ChapterStatus.ARCHIVED
+    }
+}
+
 data class Subject(
     val id: Long,
     val name: String,

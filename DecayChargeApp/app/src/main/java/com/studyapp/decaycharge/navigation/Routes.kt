@@ -20,6 +20,9 @@ data object SyllabusRoute
 data object AnalyticsRoute
 
 @Serializable
+data object ImportRoute
+
+@Serializable
 data class ChargerRoute(val chapterId: Long)
 
 enum class TopLevelDestination(

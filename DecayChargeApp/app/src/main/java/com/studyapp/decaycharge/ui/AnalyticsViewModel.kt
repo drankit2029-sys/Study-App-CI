@@ -33,13 +33,15 @@ class AnalyticsViewModel @Inject constructor(
     val uiState: StateFlow<AnalyticsUiState> = repository.content
         .map { content ->
             val subjects = content.subjects
-            val chapters = content.chapters
+            val chapters = content.chapters.filter { it.status != ChapterStatus.ARCHIVED }
             val active = chapters.filter { it.status == ChapterStatus.ACTIVE }
             AnalyticsUiState(
                 readiness = chapters.weightedReadiness(subjects),
                 chapters = chapters,
                 subjects = subjects,
-                summaries = chapters.toSubjectSummaries(subjects),
+                summaries = chapters.toSubjectSummaries(
+                    subjects.filter { subject -> chapters.any { it.subjectId == subject.id } },
+                ),
                 averageStabilityDays = if (active.isEmpty()) 0f
                 else active.map { it.stabilityDays }.average().toFloat(),
                 totalReviewCount = chapters.sumOf { it.reviewCount },

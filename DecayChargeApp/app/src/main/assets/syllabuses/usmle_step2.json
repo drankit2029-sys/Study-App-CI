@@ -1,0 +1,208 @@
+{
+  "id": "usmle_step2",
+  "title": "USMLE Step 2 CK",
+  "subtitle": "Clinical reasoning across specialties",
+  "category": "Medical",
+  "subjects": [
+    {
+      "name": "Internal Medicine",
+      "colorHex": "#0F5132",
+      "examWeight": 1.4,
+      "chapters": [
+        {
+          "unit": "Cardiology",
+          "title": "Heart Failure",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Gastroenterology",
+          "title": "Liver Disease",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Infectious Disease",
+          "title": "Sepsis",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Surgery",
+      "colorHex": "#A65D50",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Acute Care",
+          "title": "Bowel Obstruction",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Trauma",
+          "title": "Burns",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Vascular",
+          "title": "Peripheral Arterial Disease",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Obstetrics & Gynaecology",
+      "colorHex": "#80627A",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Obstetrics",
+          "title": "Preeclampsia",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Gynaecology",
+          "title": "Abnormal Uterine Bleeding",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Reproductive",
+          "title": "Infertility",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Paediatrics",
+      "colorHex": "#B4864C",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Neonatology",
+          "title": "Respiratory Distress",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Infectious Disease",
+          "title": "Fever in Children",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Development",
+          "title": "Autism Screening",
+          "difficulty": "LIGHT",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "Psychiatry",
+      "colorHex": "#64776C",
+      "examWeight": 1.0,
+      "chapters": [
+        {
+          "unit": "Mood Disorders",
+          "title": "Major Depression",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Anxiety",
+          "title": "Panic Disorder",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        },
+        {
+          "unit": "Substance Use",
+          "title": "Withdrawal",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Neurology",
+      "colorHex": "#5D8490",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Vascular",
+          "title": "Stroke Thrombolysis",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Seizures",
+          "title": "Epilepsy Management",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Neuromuscular",
+          "title": "Myasthenia Gravis",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Emergency Medicine",
+      "colorHex": "#A65D50",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Resuscitation",
+          "title": "ACLS Algorithms",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Toxicology",
+          "title": "Overdose Management",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Trauma",
+          "title": "Shock Classification",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Preventive Medicine",
+      "colorHex": "#3F6F64",
+      "examWeight": 1.0,
+      "chapters": [
+        {
+          "unit": "Screening",
+          "title": "USPSTF Recommendations",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Immunisation",
+          "title": "Adult Vaccines",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        },
+        {
+          "unit": "Epidemiology",
+          "title": "Outbreak Investigation",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    }
+  ]
+}

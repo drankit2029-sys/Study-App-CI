@@ -1,0 +1,183 @@
+{
+  "id": "us_bar",
+  "title": "US Bar Exam",
+  "subtitle": "MBE and essay foundations",
+  "category": "Law",
+  "subjects": [
+    {
+      "name": "Civil Procedure",
+      "colorHex": "#0F5132",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Jurisdiction",
+          "title": "Personal Jurisdiction",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Pleadings",
+          "title": "Motion to Dismiss",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Discovery",
+          "title": "Privilege",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Constitutional Law",
+      "colorHex": "#A65D50",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Due Process",
+          "title": "Substantive Due Process",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Equal Protection",
+          "title": "Tiers of Scrutiny",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Speech",
+          "title": "Commercial Speech",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Contracts",
+      "colorHex": "#B4864C",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Formation",
+          "title": "Offer and Acceptance",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Defences",
+          "title": "Statute of Frauds",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Remedies",
+          "title": "Expectation Damages",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Criminal Law",
+      "colorHex": "#80627A",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Elements",
+          "title": "Mens Rea",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Homicide",
+          "title": "Murder Degrees",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Defences",
+          "title": "Insanity",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Evidence",
+      "colorHex": "#5D8490",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Hearsay",
+          "title": "Exceptions",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Impeachment",
+          "title": "Prior Statements",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Privileges",
+          "title": "Attorney-Client",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "Real Property",
+      "colorHex": "#64776C",
+      "examWeight": 1.1,
+      "chapters": [
+        {
+          "unit": "Estates",
+          "title": "Future Interests",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Landlord-Tenant",
+          "title": "Covenants",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Recording",
+          "title": "Notice Systems",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Torts",
+      "colorHex": "#7A6A4F",
+      "examWeight": 1.1,
+      "chapters": [
+        {
+          "unit": "Negligence",
+          "title": "Duty and Breach",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Strict Liability",
+          "title": "Products",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Defamation",
+          "title": "Privileges",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    }
+  ]
+}

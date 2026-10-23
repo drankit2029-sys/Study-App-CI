@@ -1,0 +1,163 @@
+{
+  "id": "upsc_cse",
+  "title": "UPSC CSE Prelims + Mains",
+  "subtitle": "General studies foundation",
+  "category": "Civil Services",
+  "subjects": [
+    {
+      "name": "Polity",
+      "colorHex": "#0F5132",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Constitution",
+          "title": "Fundamental Rights",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Institutions",
+          "title": "Parliament",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Governance",
+          "title": "Civil Services",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Judiciary",
+          "title": "Judicial Review",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Geography",
+      "colorHex": "#5D8490",
+      "examWeight": 1.1,
+      "chapters": [
+        {
+          "unit": "Physical",
+          "title": "Climatology",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "India",
+          "title": "Drainage Systems",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Resources",
+          "title": "Agriculture",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Mapping",
+          "title": "Location Practice",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "History & Culture",
+      "colorHex": "#A65D50",
+      "examWeight": 1.1,
+      "chapters": [
+        {
+          "unit": "Ancient",
+          "title": "Mauryan Administration",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Modern",
+          "title": "National Movement",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Art & Culture",
+          "title": "Temple Architecture",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "World History",
+          "title": "Revolutions",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Economy",
+      "colorHex": "#B4864C",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Macroeconomics",
+          "title": "Monetary Policy",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Budget",
+          "title": "Fiscal Policy",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "External Sector",
+          "title": "Balance of Payments",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Schemes",
+          "title": "Social Sector",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "Environment & Science",
+      "colorHex": "#3F6F64",
+      "examWeight": 1.0,
+      "chapters": [
+        {
+          "unit": "Ecology",
+          "title": "Biodiversity",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Climate",
+          "title": "International Conventions",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Science",
+          "title": "Space Technology",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        },
+        {
+          "unit": "Disaster Management",
+          "title": "Hazard Mapping",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    }
+  ]
+}

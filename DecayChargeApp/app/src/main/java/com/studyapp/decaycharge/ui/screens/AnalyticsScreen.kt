@@ -1,5 +1,7 @@
 package com.studyapp.decaycharge.ui.screens
 
+import android.graphics.Paint
+import android.graphics.Typeface
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -41,11 +43,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.studyapp.decaycharge.domain.DecayCalculator
 import com.studyapp.decaycharge.model.Chapter
 import com.studyapp.decaycharge.model.ChapterStatus
 import com.studyapp.decaycharge.model.SubjectSummary
@@ -55,7 +60,6 @@ import com.studyapp.decaycharge.ui.AnalyticsUiState
 import com.studyapp.decaycharge.ui.AnalyticsViewModel
 import com.studyapp.decaycharge.ui.components.BatteryBar
 import com.studyapp.decaycharge.ui.components.CalmCard
-import com.studyapp.decaycharge.ui.components.PageHeader
 import com.studyapp.decaycharge.ui.components.SectionLabel
 import com.studyapp.decaycharge.ui.components.ZoneDot
 import com.studyapp.decaycharge.ui.components.zoneLabel
@@ -67,7 +71,6 @@ import com.studyapp.decaycharge.ui.theme.Paper
 import com.studyapp.decaycharge.ui.theme.StoneLight
 import com.studyapp.decaycharge.ui.theme.ZoneAmber
 import com.studyapp.decaycharge.ui.theme.ZoneRedSoft
-import kotlin.math.exp
 
 @Composable
 fun AnalyticsScreen(
@@ -101,13 +104,6 @@ fun AnalyticsScreen(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                PageHeader(
-                    eyebrow = "DECAY / CHARGE",
-                    title = "Analytics",
-                    subtitle = "Watch the forgetting curve soften.",
-                )
-            }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Spacer(Modifier.height(4.dp))
                 ForecastCard(state)
@@ -289,17 +285,32 @@ private fun DecayChart(
     Canvas(modifier = modifier) {
         val chartTop = 7.dp.toPx()
         val chartBottom = size.height - 7.dp.toPx()
-        val chartLeft = 2.dp.toPx()
+        val chartLeft = 31.dp.toPx()
         val chartRight = size.width - 2.dp.toPx()
         val height = chartBottom - chartTop
+        val axisTextSize = 8.sp.toPx()
+        val axisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Muted.toArgb()
+            textSize = axisTextSize
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            textAlign = Paint.Align.RIGHT
+        }
 
-        listOf(25, 50, 75, 100).forEach { level ->
+        listOf(100, 70, 35, 0).forEach { level ->
             val y = chartBottom - height * (level / 100f)
-            drawLine(
-                color = StoneLight,
-                start = Offset(chartLeft, y),
-                end = Offset(chartRight, y),
-                strokeWidth = 1.dp.toPx(),
+            if (level != 35) {
+                drawLine(
+                    color = StoneLight,
+                    start = Offset(chartLeft, y),
+                    end = Offset(chartRight, y),
+                    strokeWidth = 1.dp.toPx(),
+                )
+            }
+            drawContext.canvas.nativeCanvas.drawText(
+                "$level",
+                chartLeft - 7.dp.toPx(),
+                y + axisTextSize / 3f,
+                axisPaint,
             )
         }
         val thresholdY = chartBottom - height * 0.35f
@@ -350,6 +361,13 @@ private fun DecayChart(
                     cap = StrokeCap.Round,
                 ),
             )
+            val startValue = projectedBattery(chapter, 0).coerceIn(0f, 100f)
+            val startY = chartBottom - height * (startValue / 100f)
+            drawCircle(
+                color = color,
+                radius = 2.4.dp.toPx(),
+                center = Offset(chartLeft, startY),
+            )
             val endX = chartRight
             val endValue = projectedBattery(chapter, 14).coerceIn(0f, 100f)
             val endY = chartBottom - height * (endValue / 100f)
@@ -364,21 +382,16 @@ private fun DecayChart(
                 center = Offset(endX, endY),
             )
         }
-
-        val thresholdLabelY = thresholdY - 4.dp.toPx().coerceAtLeast(10.dp.toPx())
-        drawLine(
-            color = ZoneAmber.copy(alpha = 0.45f),
-            start = Offset(chartLeft, thresholdLabelY),
-            end = Offset(chartLeft + 18.dp.toPx(), thresholdLabelY),
-            strokeWidth = 1.dp.toPx(),
-        )
     }
 }
 
-private fun projectedBattery(chapter: Chapter, day: Int): Float {
-    val stability = (chapter.stabilityDays * chapter.difficultyWeight).coerceAtLeast(0.5f)
-    return (chapter.battery * exp(-1.05 * (day.toDouble() / stability))).toFloat()
-}
+private fun projectedBattery(chapter: Chapter, day: Int): Float = DecayCalculator.projectedBattery(
+    currentBattery = chapter.battery,
+    stabilityDays = chapter.stabilityDays,
+    difficultyWeight = chapter.difficultyWeight,
+    daysAhead = day.toFloat(),
+    status = chapter.status,
+)
 
 @Composable
 private fun SubjectBalanceCard(summary: SubjectSummary) {

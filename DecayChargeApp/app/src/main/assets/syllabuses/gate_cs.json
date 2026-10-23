@@ -1,0 +1,258 @@
+{
+  "id": "gate_cs",
+  "title": "GATE CS / IT",
+  "subtitle": "Computer science core and electives",
+  "category": "Engineering",
+  "subjects": [
+    {
+      "name": "Algorithms",
+      "colorHex": "#0F5132",
+      "examWeight": 1.4,
+      "chapters": [
+        {
+          "unit": "Graphs",
+          "title": "Shortest Paths",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Dynamic Programming",
+          "title": "Optimal Substructure",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Complexity",
+          "title": "Asymptotic Analysis",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Data Structures",
+      "colorHex": "#A65D50",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Trees",
+          "title": "Balanced Trees",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Heaps",
+          "title": "Priority Queues",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Hashing",
+          "title": "Collision Resolution",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Operating Systems",
+      "colorHex": "#B4864C",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Processes",
+          "title": "Scheduling",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Memory",
+          "title": "Paging and Segmentation",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Concurrency",
+          "title": "Deadlocks",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Databases",
+      "colorHex": "#80627A",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Relational Model",
+          "title": "Normalisation",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "SQL",
+          "title": "Query Processing",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Transactions",
+          "title": "Isolation Levels",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Computer Networks",
+      "colorHex": "#5D8490",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "TCP/IP",
+          "title": "Congestion Control",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Routing",
+          "title": "Link State Protocols",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Security",
+          "title": "TLS Basics",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "Theory of Computation",
+      "colorHex": "#64776C",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Automata",
+          "title": "DFA Minimisation",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Languages",
+          "title": "Pumping Lemma",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Decidability",
+          "title": "Reductions",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Compiler Design",
+      "colorHex": "#7A6A4F",
+      "examWeight": 1.1,
+      "chapters": [
+        {
+          "unit": "Parsing",
+          "title": "LL and LR",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Code Generation",
+          "title": "Register Allocation",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Optimisation",
+          "title": "Data Flow Analysis",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Computer Organisation",
+      "colorHex": "#3F6F64",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Pipelining",
+          "title": "Hazards",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Cache",
+          "title": "Associativity",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Instruction Set",
+          "title": "Addressing Modes",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "Discrete Mathematics",
+      "colorHex": "#0F5132",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Logic",
+          "title": "Propositional Proofs",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Combinatorics",
+          "title": "Generating Functions",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Graph Theory",
+          "title": "Colouring",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Programming",
+      "colorHex": "#A65D50",
+      "examWeight": 1.0,
+      "chapters": [
+        {
+          "unit": "C",
+          "title": "Pointers",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        },
+        {
+          "unit": "Recursion",
+          "title": "Backtracking",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "OOP",
+          "title": "Virtual Dispatch",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        }
+      ]
+    }
+  ]
+}

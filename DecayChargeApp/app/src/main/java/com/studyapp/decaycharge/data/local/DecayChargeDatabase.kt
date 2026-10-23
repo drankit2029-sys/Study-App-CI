@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.Upsert
+import com.studyapp.decaycharge.model.ChapterStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -25,6 +26,9 @@ interface SubjectDao {
 
     @Upsert
     suspend fun upsertAll(subjects: List<SubjectEntity>)
+
+    @Query("DELETE FROM subjects WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 }
 
 @Dao
@@ -38,6 +42,9 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE id = :chapterId")
     suspend fun getById(chapterId: Long): ChapterEntity?
 
+    @Query("SELECT * FROM chapters")
+    suspend fun getAll(): List<ChapterEntity>
+
     @Query("SELECT COUNT(*) FROM chapters")
     suspend fun count(): Int
 
@@ -46,6 +53,15 @@ interface ChapterDao {
 
     @Upsert
     suspend fun upsertAll(chapters: List<ChapterEntity>)
+
+    @Query("UPDATE chapters SET status = :status WHERE id IN (:chapterIds)")
+    suspend fun updateStatus(chapterIds: List<Long>, status: ChapterStatus)
+
+    @Query("UPDATE chapters SET targetMinutes = :targetMinutes WHERE id IN (:chapterIds)")
+    suspend fun updateTargetMinutes(chapterIds: List<Long>, targetMinutes: Int)
+
+    @Query("DELETE FROM chapters WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 }
 
 @Dao

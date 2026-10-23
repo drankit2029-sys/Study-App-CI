@@ -26,7 +26,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Lock
@@ -39,7 +38,6 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +64,6 @@ import com.studyapp.decaycharge.ui.components.CalmIconButton
 import com.studyapp.decaycharge.ui.components.Eyebrow
 import com.studyapp.decaycharge.ui.components.FilterPill
 import com.studyapp.decaycharge.ui.components.Hairline
-import com.studyapp.decaycharge.ui.components.PageHeader
 import com.studyapp.decaycharge.ui.components.RingGauge
 import com.studyapp.decaycharge.ui.components.SectionLabel
 import com.studyapp.decaycharge.ui.components.SubjectTag
@@ -85,7 +82,6 @@ import com.studyapp.decaycharge.ui.theme.Paper
 import com.studyapp.decaycharge.ui.theme.Stone
 import com.studyapp.decaycharge.ui.theme.StoneLight
 import com.studyapp.decaycharge.ui.theme.White
-import kotlinx.coroutines.launch
 
 @Composable
 fun TriageScreen(
@@ -97,7 +93,6 @@ fun TriageScreen(
     val columns = if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded) 2 else 1
     val horizontalPadding = if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact) 24.dp else 32.dp
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         BotanicalBranch(
@@ -124,27 +119,6 @@ fun TriageScreen(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "header") {
-                    PageHeader(
-                        eyebrow = "DECAY / CHARGE",
-                        title = "Triage",
-                        subtitle = "Protect what is quietly fading.",
-                        trailing = {
-                            CalmIconButton(
-                                icon = Icons.Rounded.AcUnit,
-                                contentDescription = "Cryo-Freeze",
-                                onClick = {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            "Cryo-Freeze arrives in Phase 5.",
-                                        )
-                                    }
-                                },
-                                tint = Muted,
-                            )
-                        },
-                    )
-                }
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "readiness") {
                     Spacer(Modifier.height(4.dp))
                     ReadinessCard(

@@ -1,0 +1,119 @@
+{
+  "id": "jee_main_advanced",
+  "title": "JEE Main & Advanced",
+  "subtitle": "Physics, chemistry and mathematics",
+  "category": "Engineering",
+  "subjects": [
+    {
+      "name": "Physics",
+      "colorHex": "#0F5132",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Mechanics",
+          "title": "Rotational Dynamics",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Electrodynamics",
+          "title": "Electromagnetic Induction",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Optics",
+          "title": "Interference",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Modern Physics",
+          "title": "Photoelectric Effect",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Thermal Physics",
+          "title": "Kinetic Theory",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Chemistry",
+      "colorHex": "#A65D50",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Physical Chemistry",
+          "title": "Chemical Equilibrium",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Organic Chemistry",
+          "title": "Reaction Mechanisms",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Inorganic Chemistry",
+          "title": "Coordination Compounds",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Thermodynamics",
+          "title": "Gibbs Energy",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Periodicity",
+          "title": "Periodic Trends",
+          "difficulty": "LIGHT",
+          "targetMinutes": 30
+        }
+      ]
+    },
+    {
+      "name": "Mathematics",
+      "colorHex": "#B4864C",
+      "examWeight": 1.4,
+      "chapters": [
+        {
+          "unit": "Calculus",
+          "title": "Definite Integrals",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Coordinate Geometry",
+          "title": "Conic Sections",
+          "difficulty": "HEAVY",
+          "targetMinutes": 60
+        },
+        {
+          "unit": "Algebra",
+          "title": "Complex Numbers",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Vectors",
+          "title": "Three-Dimensional Geometry",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Probability",
+          "title": "Conditional Probability",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    }
+  ]
+}

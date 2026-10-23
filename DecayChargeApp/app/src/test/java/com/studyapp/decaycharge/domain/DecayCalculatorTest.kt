@@ -182,6 +182,42 @@ class DecayCalculatorTest {
     }
 
     @Test
+    fun `projected battery clamps active chapters at the floor`() {
+        val dayZero = DecayCalculator.projectedBattery(
+            currentBattery = 80f,
+            stabilityDays = 3f,
+            difficultyWeight = 1f,
+            daysAhead = 0f,
+        )
+        val farFuture = DecayCalculator.projectedBattery(
+            currentBattery = 80f,
+            stabilityDays = 3f,
+            difficultyWeight = 1f,
+            daysAhead = 365f,
+        )
+        assertEquals(80f, dayZero, 0.0001f)
+        assertEquals(1f, farFuture, 0.0001f)
+    }
+
+    @Test
+    fun `projected battery follows the same curve as current decay`() {
+        val projected = DecayCalculator.projectedBattery(
+            currentBattery = 72f,
+            stabilityDays = 4f,
+            difficultyWeight = 1.2f,
+            daysAhead = 5f,
+        )
+        val direct = DecayCalculator.batteryLevel(
+            lastBatteryLevel = 72f,
+            status = ChapterStatus.ACTIVE,
+            stabilityDays = 4f,
+            difficultyWeight = 1.2f,
+            elapsedDays = 5f,
+        )
+        assertEquals(direct, projected, 0.0001f)
+    }
+
+    @Test
     fun `zone boundaries match triage thresholds`() {
         assertEquals(Zone.LOCKED, DecayCalculator.zoneFor(100f, ChapterStatus.LOCKED))
         assertEquals(Zone.RED, DecayCalculator.zoneFor(0f, ChapterStatus.ACTIVE))

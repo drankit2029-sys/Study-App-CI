@@ -1,0 +1,133 @@
+{
+  "id": "aibe",
+  "title": "All India Bar Examination",
+  "subtitle": "AIBE core legal syllabus",
+  "category": "Law",
+  "subjects": [
+    {
+      "name": "Constitutional Law",
+      "colorHex": "#0F5132",
+      "examWeight": 1.3,
+      "chapters": [
+        {
+          "unit": "Fundamental Rights",
+          "title": "Article 21",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Writs",
+          "title": "Habeas Corpus",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Federalism",
+          "title": "Distribution of Powers",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Civil Procedure",
+      "colorHex": "#A65D50",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Pleadings",
+          "title": "Plaint and Written Statement",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Jurisdiction",
+          "title": "Territorial Jurisdiction",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Appeals",
+          "title": "First Appeal",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Criminal Procedure",
+      "colorHex": "#B4864C",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Investigation",
+          "title": "FIR and Arrest",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Bail",
+          "title": "Bail Jurisprudence",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Trial",
+          "title": "Framing of Charges",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Evidence",
+      "colorHex": "#80627A",
+      "examWeight": 1.2,
+      "chapters": [
+        {
+          "unit": "Relevance",
+          "title": "Res Gestae",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Witnesses",
+          "title": "Examination-in-Chief",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 45
+        },
+        {
+          "unit": "Burden of Proof",
+          "title": "Presumptions",
+          "difficulty": "HEAVY",
+          "targetMinutes": 45
+        }
+      ]
+    },
+    {
+      "name": "Professional Ethics",
+      "colorHex": "#5D8490",
+      "examWeight": 1.0,
+      "chapters": [
+        {
+          "unit": "Duties",
+          "title": "Advocate's Duties",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        },
+        {
+          "unit": "Conduct",
+          "title": "Conflict of Interest",
+          "difficulty": "MEDIUM",
+          "targetMinutes": 30
+        },
+        {
+          "unit": "Discipline",
+          "title": "Bar Council Procedure",
+          "difficulty": "LIGHT",
+          "targetMinutes": 30
+        }
+      ]
+    }
+  ]
+}

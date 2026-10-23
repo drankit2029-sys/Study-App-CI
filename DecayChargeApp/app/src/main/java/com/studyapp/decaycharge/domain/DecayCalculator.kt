@@ -101,6 +101,22 @@ object DecayCalculator {
         return decayed.coerceIn(floor, 100f)
     }
 
+    fun projectedBattery(
+        currentBattery: Float,
+        stabilityDays: Float,
+        difficultyWeight: Float,
+        daysAhead: Float,
+        status: ChapterStatus = ChapterStatus.ACTIVE,
+        examCrunchFactor: Float = 1f,
+    ): Float = batteryLevel(
+        lastBatteryLevel = currentBattery,
+        status = status,
+        stabilityDays = stabilityDays,
+        difficultyWeight = difficultyWeight,
+        elapsedDays = daysAhead,
+        examCrunchFactor = examCrunchFactor,
+    )
+
     fun zoneFor(battery: Float, status: ChapterStatus): Zone = when {
         status == ChapterStatus.LOCKED -> Zone.LOCKED
         battery < 35f -> Zone.RED

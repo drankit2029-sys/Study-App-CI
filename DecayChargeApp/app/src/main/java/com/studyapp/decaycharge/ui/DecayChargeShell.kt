@@ -61,6 +61,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.studyapp.decaycharge.navigation.AnalyticsRoute
 import com.studyapp.decaycharge.navigation.ChargerRoute
+import com.studyapp.decaycharge.navigation.ImportRoute
 import com.studyapp.decaycharge.navigation.LocalWindowSizeClass
 import com.studyapp.decaycharge.navigation.SyllabusRoute
 import com.studyapp.decaycharge.navigation.TopLevelDestination
@@ -70,6 +71,7 @@ import com.studyapp.decaycharge.ui.components.CalmIconButton
 import com.studyapp.decaycharge.ui.components.Hairline
 import com.studyapp.decaycharge.ui.screens.AnalyticsScreen
 import com.studyapp.decaycharge.ui.screens.ChargerScreen
+import com.studyapp.decaycharge.ui.screens.ImportScreen
 import com.studyapp.decaycharge.ui.screens.SyllabusScreen
 import com.studyapp.decaycharge.ui.screens.TriageScreen
 import com.studyapp.decaycharge.ui.theme.Border
@@ -85,6 +87,48 @@ import com.studyapp.decaycharge.ui.theme.ZoneGreen
 
 @Composable
 fun DecayChargeApp() {
+    val onboardingViewModel: OnboardingViewModel = hiltViewModel()
+    val needsOnboarding by onboardingViewModel.needsOnboarding.collectAsStateWithLifecycle()
+
+    when (needsOnboarding) {
+        null -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Ivory),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "dc",
+                    color = Forest,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
+                )
+            }
+        }
+
+        true -> {
+            val importViewModel: ImportViewModel = hiltViewModel()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Ivory)
+                    .windowInsetsPadding(WindowInsets.safeDrawing),
+            ) {
+                ImportScreen(
+                    viewModel = importViewModel,
+                    canClose = false,
+                    onClose = {},
+                    onImported = {},
+                )
+            }
+        }
+
+        false -> DecayChargeMain()
+    }
+}
+
+@Composable
+private fun DecayChargeMain() {
     val navController = rememberNavController()
     val sessionViewModel: SessionViewModel = hiltViewModel()
     val activeSession by sessionViewModel.activeSession.collectAsStateWithLifecycle()
@@ -189,6 +233,7 @@ private fun DecayNavHost(
                 viewModel = viewModel,
                 onBackToTriage = { navController.switchTab(TopLevelDestination.Triage) },
                 onOpenCharger = { navController.navigate(ChargerRoute(it)) },
+                onOpenImport = { navController.navigate(ImportRoute) { launchSingleTop = true } },
             )
         }
         composable<AnalyticsRoute> {
@@ -196,6 +241,15 @@ private fun DecayNavHost(
             AnalyticsScreen(
                 viewModel = viewModel,
                 onBackToTriage = { navController.switchTab(TopLevelDestination.Triage) },
+            )
+        }
+        composable<ImportRoute> {
+            val viewModel: ImportViewModel = hiltViewModel()
+            ImportScreen(
+                viewModel = viewModel,
+                canClose = true,
+                onClose = { navController.popBackStack() },
+                onImported = { navController.popBackStack() },
             )
         }
         composable<ChargerRoute> {
