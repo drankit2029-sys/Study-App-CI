@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -107,12 +108,9 @@ class PomodoroScreenshotTest {
     }
 
     private fun capture(device: UiDevice, name: String) {
-        val publicDirectory = "/sdcard/Download/PomodoroScreenshots"
-        val output = device.executeShellCommand(
-            "mkdir -p $publicDirectory && screencap -p $publicDirectory/$name && " +
-                "test -f $publicDirectory/$name && echo copied",
-        ).trim()
-        assertTrue("Could not capture $name: $output", output.endsWith("copied"))
+        val directory = File(instrumentation.targetContext.filesDir, "screenshots")
+        directory.mkdirs()
+        assertTrue("Could not capture $name", device.takeScreenshot(File(directory, name)))
     }
 
     private fun waitForOngoingNotification(expectedText: String): Notification {

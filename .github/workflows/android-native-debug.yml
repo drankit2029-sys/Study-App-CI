@@ -87,7 +87,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
-            set +e; adb shell input keyevent 82; adb shell wm dismiss-keyguard; adb shell svc power stayon true; adb shell settings put system screen_off_timeout 600000; cd AndroidApp; ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace; test_exit=$?; mkdir -p ../Screenshots; adb pull /sdcard/Download/PomodoroScreenshots/. ../Screenshots/ || true; exit $test_exit
+            set +e; adb shell input keyevent 82; adb shell wm dismiss-keyguard; adb shell svc power stayon true; adb shell settings put system screen_off_timeout 600000; cd AndroidApp; ./gradlew assembleDebug assembleDebugAndroidTest --no-daemon --stacktrace; build_exit=$?; if [ $build_exit -ne 0 ]; then exit $build_exit; fi; adb install -r app/build/outputs/apk/debug/app-debug.apk; app_exit=$?; adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk; test_apk_exit=$?; if [ $app_exit -ne 0 ] || [ $test_apk_exit -ne 0 ]; then exit 1; fi; test_output=$(adb shell am instrument -w -r com.studyapp.pomodoro.nativeapp.test/androidx.test.runner.AndroidJUnitRunner 2>&1); echo "$test_output"; mkdir -p ../Screenshots; echo "$test_output" > ../Screenshots/test-output.txt; echo "$test_output" | grep -q "OK (2 tests)"; test_exit=$?; for f in $(adb shell run-as com.studyapp.pomodoro.nativeapp ls files/screenshots 2>/dev/null); do adb exec-out run-as com.studyapp.pomodoro.nativeapp cat files/screenshots/$f > ../Screenshots/$f; done; screenshot_count=$(find ../Screenshots -name '*.png' | wc -l); echo "Pulled $screenshot_count screenshots"; if [ "$screenshot_count" -ne 4 ]; then test_exit=1; fi; exit $test_exit
 
       - name: Upload screenshots
         if: always()
@@ -95,14 +95,5 @@ jobs:
         with:
           name: pomodoro-emulator-screenshots
           path: Screenshots
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: pomodoro-emulator-test-reports
-          path: AndroidApp/app/build/reports/androidTests
           if-no-files-found: warn
           retention-days: 14
