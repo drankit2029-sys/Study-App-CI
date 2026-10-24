@@ -111,7 +111,14 @@ class PomodoroScreenshotTest {
         val directory = instrumentation.targetContext.getExternalFilesDir("screenshots")
             ?: error("External files directory is unavailable")
         directory.mkdirs()
-        assertTrue("Could not capture $name", device.takeScreenshot(File(directory, name)))
+        val file = File(directory, name)
+        assertTrue("Could not capture $name", device.takeScreenshot(file))
+        val publicDirectory = "/sdcard/Download/PomodoroScreenshots"
+        val copied = device.executeShellCommand(
+            "mkdir -p $publicDirectory && cp ${file.absolutePath} $publicDirectory/$name && " +
+                "test -f $publicDirectory/$name && echo copied",
+        ).trim()
+        assertTrue("Could not copy $name to public storage", copied.endsWith("copied"))
     }
 
     private fun waitForOngoingNotification(expectedText: String): Notification {
