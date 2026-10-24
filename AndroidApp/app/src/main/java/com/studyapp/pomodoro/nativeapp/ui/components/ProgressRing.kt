@@ -38,8 +38,13 @@ fun ProgressRing(
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val stroke = strokeWidth.toPx()
-            val diameter = this.size.minDimension - stroke
-            val topLeft = Offset(stroke / 2f, stroke / 2f)
+            val dotRadius = stroke * 0.62f
+            val maxInset = maxOf(stroke / 2f, dotRadius)
+            val diameter = (this.size.minDimension - maxInset * 2f).coerceAtLeast(0f)
+            val topLeft = Offset(
+                x = (this.size.width - diameter) / 2f,
+                y = (this.size.height - diameter) / 2f,
+            )
             val arcSize = Size(diameter, diameter)
             drawArc(
                 color = trackColor,
@@ -71,7 +76,7 @@ fun ProgressRing(
                     )
                     drawCircle(
                         color = endDotColor,
-                        radius = stroke * 0.62f,
+                        radius = dotRadius,
                         center = dotCenter,
                     )
                 }

@@ -1,5 +1,6 @@
 package com.studyapp.pomodoro.nativeapp.ui.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -7,7 +8,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -72,19 +73,19 @@ fun SoftButton(
 
     Row(
         modifier = modifier
-            .height(54.dp)
+            .heightIn(min = 54.dp)
             .then(surfaceModifier)
             .clip(shape)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = LocalIndication.current,
                 enabled = enabled,
                 role = Role.Button,
             ) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -123,7 +124,7 @@ fun SoftIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    size: Dp = 36.dp,
+    size: Dp = 48.dp,
     iconSize: Dp = 16.dp,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -144,7 +145,7 @@ fun SoftIconButton(
             .clip(shape)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = LocalIndication.current,
                 enabled = enabled,
                 role = Role.Button,
             ) {

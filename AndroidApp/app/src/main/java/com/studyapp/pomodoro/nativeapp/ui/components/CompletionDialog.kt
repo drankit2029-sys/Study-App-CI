@@ -1,5 +1,6 @@
 package com.studyapp.pomodoro.nativeapp.ui.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,16 +17,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +48,6 @@ import com.studyapp.pomodoro.nativeapp.Phase
 import com.studyapp.pomodoro.nativeapp.SessionSettings
 import com.studyapp.pomodoro.nativeapp.ui.theme.Forest
 import com.studyapp.pomodoro.nativeapp.ui.theme.Ink
-import com.studyapp.pomodoro.nativeapp.ui.theme.Ivory
 import com.studyapp.pomodoro.nativeapp.ui.theme.MintLight
 import com.studyapp.pomodoro.nativeapp.ui.theme.Muted
 import com.studyapp.pomodoro.nativeapp.ui.theme.Paper
@@ -72,7 +75,7 @@ fun CompletionDialog(
     }
     val confirmLabel = if (completion.next == Phase.Focus) "Start focus" else "Start break"
     val haptic = LocalHapticFeedback.current
-    val closeInteraction = MutableInteractionSource()
+    val closeInteraction = remember { MutableInteractionSource() }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -90,13 +93,14 @@ fun CompletionDialog(
                     .fillMaxWidth()
                     .softRaised(Paper, 26.dp, 20.dp)
                     .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(26.dp))
+                    .verticalScroll(rememberScrollState())
                     .padding(24.dp),
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(end = 28.dp),
+                            .padding(end = 40.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
@@ -127,8 +131,8 @@ fun CompletionDialog(
                                 text = "You're ready to go.",
                                 color = Muted,
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 8.sp,
-                                    letterSpacing = 1.6.sp,
+                                    fontSize = 11.sp,
+                                    letterSpacing = 1.4.sp,
                                 ),
                             )
                         }
@@ -136,11 +140,11 @@ fun CompletionDialog(
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .size(32.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
                             .clickable(
                                 interactionSource = closeInteraction,
-                                indication = null,
+                                indication = LocalIndication.current,
                                 role = Role.Button,
                             ) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -169,7 +173,7 @@ fun CompletionDialog(
                 SoftButton(
                     label = confirmLabel,
                     onClick = onStartNext,
-                    trailingIcon = Icons.Rounded.ArrowForward,
+                    trailingIcon = Icons.AutoMirrored.Rounded.ArrowForward,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(10.dp))
@@ -197,7 +201,7 @@ fun CompletionDialog(
                         color = Muted,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 7.sp,
+                            fontSize = 11.sp,
                             letterSpacing = 1.8.sp,
                         ),
                     )

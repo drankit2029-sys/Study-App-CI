@@ -27,7 +27,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +40,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -48,7 +49,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -102,6 +102,7 @@ fun PomodoroScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .clipToBounds()
             .background(Ivory),
     ) {
         BotanicalBranch(
@@ -209,7 +210,7 @@ private fun TimerCard(
             label = state.actionLabel,
             onClick = onToggle,
             leadingIcon = if (state.isRunning) Icons.Rounded.Pause else null,
-            trailingIcon = if (state.isRunning) null else Icons.Rounded.ArrowForward,
+            trailingIcon = if (state.isRunning) null else Icons.AutoMirrored.Rounded.ArrowForward,
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(10.dp))
@@ -245,9 +246,9 @@ private fun TimerFace(state: PomodoroUiState) {
                     text = state.phase.heading.uppercase(),
                     color = Muted,
                     style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 8.sp,
-                        letterSpacing = 2.4.sp,
-                        lineHeight = 12.sp,
+                        fontSize = 11.sp,
+                        letterSpacing = 2.0.sp,
+                        lineHeight = 14.sp,
                     ),
                 )
                 Text(
@@ -269,8 +270,8 @@ private fun TimerFace(state: PomodoroUiState) {
                     text = state.sessionLabel,
                     color = Muted,
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 10.sp,
-                        lineHeight = 14.sp,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
                     ),
                 )
                 Spacer(Modifier.height(8.dp))
@@ -283,7 +284,7 @@ private fun TimerFace(state: PomodoroUiState) {
 @Composable
 private fun SessionDots(state: PomodoroUiState) {
     Row(
-        modifier = Modifier.semantics {
+        modifier = Modifier.clearAndSetSemantics {
             contentDescription = "${state.filledDots} of $SessionsPerCycle sessions complete"
         },
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -316,7 +317,7 @@ private fun StatusRow(state: PomodoroUiState) {
     ) {
         val statusColor: Color = when {
             state.isRunning -> Forest
-            state.remaining < state.totalSeconds -> Mint
+            state.isMidSession -> Mint
             else -> Stone
         }
         Box(
@@ -329,10 +330,10 @@ private fun StatusRow(state: PomodoroUiState) {
             text = state.statusText,
             color = Muted,
             textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(max = 250.dp),
+            modifier = Modifier.widthIn(max = 260.dp),
             style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 10.sp,
-                lineHeight = 15.sp,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
             ),
         )
     }
@@ -411,7 +412,7 @@ private fun RhythmCard(state: PomodoroUiState) {
                 text = caption,
                 color = Muted,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 7.sp,
+                    fontSize = 11.sp,
                     letterSpacing = 1.4.sp,
                 ),
             )
@@ -419,7 +420,7 @@ private fun RhythmCard(state: PomodoroUiState) {
                 text = "$goalCount OF $SessionsPerCycle",
                 color = Forest,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 7.sp,
+                    fontSize = 11.sp,
                     letterSpacing = 1.4.sp,
                 ),
             )
@@ -452,7 +453,7 @@ private fun StatBlock(
             text = label,
             color = Muted,
             style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 7.sp,
+                fontSize = 11.sp,
                 letterSpacing = 1.5.sp,
             ),
         )
@@ -490,7 +491,7 @@ private fun SettingsCard(
                 text = "MINUTES",
                 color = Muted,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 7.sp,
+                    fontSize = 11.sp,
                     letterSpacing = 1.6.sp,
                 ),
             )
@@ -530,8 +531,8 @@ private fun SettingsCard(
                 text = "Pause the timer to adjust your rhythm.",
                 color = Muted,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
                 ),
             )
         }
@@ -548,7 +549,7 @@ private fun SectionLabel(index: String, title: String) {
             text = index,
             color = Forest,
             style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 8.sp,
+                fontSize = 11.sp,
                 letterSpacing = 1.2.sp,
             ),
         )
@@ -556,7 +557,7 @@ private fun SectionLabel(index: String, title: String) {
             text = title,
             color = Muted,
             style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 8.sp,
+                fontSize = 11.sp,
                 letterSpacing = 1.6.sp,
             ),
         )
@@ -581,8 +582,8 @@ private fun Footer() {
             text = "A SOFTER STUDY RHYTHM",
             color = Muted,
             style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 7.sp,
-                letterSpacing = 2.sp,
+                fontSize = 11.sp,
+                letterSpacing = 2.0.sp,
             ),
         )
         Spacer(Modifier.width(10.dp))

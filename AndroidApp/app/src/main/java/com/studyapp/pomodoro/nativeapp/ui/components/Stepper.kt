@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Remove
@@ -42,7 +43,7 @@ fun Stepper(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (enabled) 1f else 0.5f)
-            .padding(vertical = 14.dp),
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -56,26 +57,26 @@ fun Stepper(
                 text = "$min-$max min",
                 color = Muted,
                 style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp,
                 ),
             )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             SoftIconButton(
                 icon = Icons.Outlined.Remove,
                 contentDescription = "Decrease $label by $step minutes",
                 onClick = { onChange(value - step) },
                 enabled = canDecrease,
-                size = 34.dp,
-                iconSize = 15.dp,
+                size = 48.dp,
+                iconSize = 16.dp,
             )
             Row(
                 modifier = Modifier
-                    .width(54.dp)
+                    .widthIn(min = 64.dp)
                     .clearAndSetSemantics {
                         contentDescription = "$label: $value minutes"
                     },
@@ -97,7 +98,7 @@ fun Stepper(
                     text = "min",
                     color = Muted,
                     style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 8.sp,
+                        fontSize = 11.sp,
                         letterSpacing = 0.4.sp,
                     ),
                 )
@@ -107,8 +108,8 @@ fun Stepper(
                 contentDescription = "Increase $label by $step minutes",
                 onClick = { onChange(value + step) },
                 enabled = canIncrease,
-                size = 34.dp,
-                iconSize = 15.dp,
+                size = 48.dp,
+                iconSize = 16.dp,
             )
         }
     }

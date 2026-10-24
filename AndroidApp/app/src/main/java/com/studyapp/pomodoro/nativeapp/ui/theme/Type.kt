@@ -64,5 +64,5 @@ val PomodoroTypography = Typography(
     bodySmall = sans(11, FontWeight.Normal, 16),
     labelLarge = sans(11, FontWeight.SemiBold, 16),
     labelMedium = sans(11, FontWeight.Medium, 16, 0.1f),
-    labelSmall = sans(8, FontWeight.Bold, 12, 1.8f),
+    labelSmall = sans(11, FontWeight.Bold, 15, 1.4f),
 )

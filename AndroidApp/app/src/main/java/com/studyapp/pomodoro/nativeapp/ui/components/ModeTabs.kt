@@ -1,5 +1,6 @@
 package com.studyapp.pomodoro.nativeapp.ui.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -7,7 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -45,25 +46,25 @@ fun ModeTabs(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .softRaised(Parchment, 22.dp, 2.dp)
+            .softRaised(Parchment, 24.dp, 2.dp)
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         modes.forEach { phase ->
             val active = phase == activePhase
-            val shape = RoundedCornerShape(19.dp)
+            val shape = RoundedCornerShape(21.dp)
             val interactionSource = remember { MutableInteractionSource() }
             val haptic = LocalHapticFeedback.current
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .height(38.dp)
+                    .heightIn(min = 48.dp)
                     .alpha(if (enabled) 1f else 0.55f)
                     .clip(shape)
                     .background(if (active) Forest else Parchment, shape)
                     .clickable(
                         interactionSource = interactionSource,
-                        indication = null,
+                        indication = LocalIndication.current,
                         enabled = enabled,
                         role = Role.Tab,
                     ) {
@@ -71,7 +72,7 @@ fun ModeTabs(
                         onSelect(phase)
                     }
                     .semantics { selected = active }
-                    .padding(horizontal = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

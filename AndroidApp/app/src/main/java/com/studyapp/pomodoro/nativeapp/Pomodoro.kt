@@ -42,6 +42,11 @@ val SettingBounds = mapOf(
 
 fun secondsFor(phase: Phase, settings: SessionSettings): Int = settings.minutesFor(phase) * 60
 
+fun millisFor(phase: Phase, settings: SessionSettings): Long = secondsFor(phase, settings) * 1000L
+
+fun defaultRemainingMillisMap(settings: SessionSettings = DefaultSettings): Map<Phase, Long> =
+    Phase.entries.associateWith { phase -> millisFor(phase, settings) }
+
 fun formatClock(totalSeconds: Int): String {
     val safeSeconds = totalSeconds.coerceAtLeast(0)
     val minutes = safeSeconds / 60
