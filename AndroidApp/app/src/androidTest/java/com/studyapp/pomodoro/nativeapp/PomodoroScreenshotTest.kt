@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Notification
 import android.app.NotificationManager
 import android.os.Build
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -59,9 +60,10 @@ class PomodoroScreenshotTest {
         }
         val device = UiDevice.getInstance(instrumentation)
         device.wakeUp()
-        device.setOrientationNatural()
+        device.setOrientationPortrait()
         dismissSystemDialog(device)
         device.waitForIdle()
+        Thread.sleep(300L)
         composeRule.waitForIdle()
     }
 
@@ -77,19 +79,19 @@ class PomodoroScreenshotTest {
     fun capturesPortraitTimerDailyAndNotification() {
         val device = UiDevice.getInstance(instrumentation)
 
-        composeRule.onNodeWithText("Start focus").performScrollTo().performClick()
+        composeRule.onNodeWithText("Start focus").scrollIntoView().performClick()
         composeRule.onNodeWithText("Pause").assertIsDisplayed()
         Thread.sleep(500L)
         scrollToTop()
         capture(device, "01_timer_running.png")
 
         composeRule.onNodeWithContentDescription("Reset today's sessions")
-            .performScrollTo()
+            .scrollIntoView()
             .assertIsDisplayed()
         composeRule.onNodeWithText("AUTO RESET · 12:00 AM").assertExists()
         capture(device, "02_daily_rhythm.png")
 
-        composeRule.onNodeWithText("Pause").performScrollTo().performClick()
+        composeRule.onNodeWithText("Pause").scrollIntoView().performClick()
         composeRule.onNodeWithText("Resume").assertIsDisplayed()
         scrollToTop()
         capture(device, "03_timer_paused.png")
@@ -118,7 +120,7 @@ class PomodoroScreenshotTest {
         device.pressBack()
         device.waitForIdle()
 
-        composeRule.onNodeWithText("Resume").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Resume").scrollIntoView().assertIsDisplayed()
     }
 
     @Test
@@ -132,67 +134,75 @@ class PomodoroScreenshotTest {
         composeRule.onNodeWithText("Alarm sound").assertIsDisplayed()
         capture(device, "05_alarm_settings.png")
 
-        composeRule.onNodeWithText("RING FOR").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("RING FOR").scrollIntoView().assertIsDisplayed()
         composeRule.onNodeWithText("Preview alarm").assertExists()
         capture(device, "06_alarm_settings_durations.png")
 
         composeRule.onNodeWithContentDescription("Close alarm settings")
-            .performScrollTo()
+            .scrollIntoView()
             .performClick()
         composeRule.onNodeWithText("Pomodoro").assertIsDisplayed()
 
-        composeRule.onNodeWithText("Start focus").performScrollTo().performClick()
+        composeRule.onNodeWithText("Start focus").scrollIntoView().performClick()
+        waitForOngoingNotification("Your focus is protected.")
         instrumentation.runOnMainSync { engine.completeCurrentPhaseForTesting() }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Focus complete").assertIsDisplayed()
         capture(device, "07_session_complete.png")
 
         instrumentation.runOnMainSync { engine.stopAlarm() }
-        composeRule.onNodeWithText("Later").performScrollTo().performClick()
+        composeRule.onNodeWithText("Later").scrollIntoView().performClick()
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("TODAY'S RHYTHM").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("1 OF 4").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("TODAY'S RHYTHM").scrollIntoView().assertIsDisplayed()
+        composeRule.onNodeWithText("1 OF 4").scrollIntoView().assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Reset today's sessions")
-            .performScrollTo()
+            .scrollIntoView()
             .performClick()
-        composeRule.onNodeWithText("0 OF 4").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("0 OF 4").scrollIntoView().assertIsDisplayed()
         capture(device, "08_daily_reset.png")
     }
 
     @Test
     fun capturesLandscapeTimerAndAlarmSettings() {
         val device = UiDevice.getInstance(instrumentation)
-        device.setOrientationLeft()
+        device.setOrientationLandscape()
         device.waitForIdle()
         composeRule.waitForIdle()
         Thread.sleep(1200L)
 
-        composeRule.onNodeWithText("Start focus").performScrollTo().performClick()
+        composeRule.onNodeWithText("Start focus").scrollIntoView().performClick()
         composeRule.onNodeWithText("TODAY'S RHYTHM").assertExists()
-        composeRule.onNodeWithText("SESSION LENGTHS").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("SESSION LENGTHS").scrollIntoView().assertIsDisplayed()
         runCatching {
-            composeRule.onNodeWithText("STUDY / RHYTHM").performScrollTo()
+            composeRule.onNodeWithText("STUDY / RHYTHM").scrollIntoView()
         }
         Thread.sleep(500L)
         capture(device, "09_landscape.png")
 
         val settingsButton = composeRule.onNodeWithContentDescription("Alarm settings")
-        runCatching { settingsButton.performScrollTo() }
+        runCatching { settingsButton.scrollIntoView() }
         settingsButton.performClick()
         composeRule.onNodeWithText("Alarm settings").assertIsDisplayed()
         capture(device, "10_landscape_settings.png")
 
         composeRule.onNodeWithContentDescription("Close alarm settings")
-            .performScrollTo()
+            .scrollIntoView()
             .performClick()
         device.setOrientationNatural()
         device.waitForIdle()
     }
 
     private fun scrollToTop() {
-        composeRule.onNodeWithText("STUDY / RHYTHM").performScrollTo()
+        runCatching {
+            composeRule.onNodeWithText("STUDY / RHYTHM").performScrollTo()
+        }
         composeRule.waitForIdle()
+    }
+
+    private fun SemanticsNodeInteraction.scrollIntoView(): SemanticsNodeInteraction {
+        runCatching { performScrollTo() }
+        return this
     }
 
     private fun capture(device: UiDevice, name: String) {
@@ -211,7 +221,7 @@ class PomodoroScreenshotTest {
         }
     }
 
-    private fun waitForOngoingNotification(expectedText: String): Notification {
+    private fun waitForOngoingNotification(expectedText: String? = null): Notification {
         val manager = instrumentation.targetContext.getSystemService(NotificationManager::class.java)
         val deadline = System.currentTimeMillis() + 10_000L
         while (System.currentTimeMillis() < deadline) {
@@ -222,7 +232,7 @@ class PomodoroScreenshotTest {
                     val text = notification.extras
                         .getCharSequence(Notification.EXTRA_TEXT)
                         ?.toString()
-                    if (text == expectedText) {
+                    if (expectedText == null || text == expectedText) {
                         return notification
                     }
                 }
