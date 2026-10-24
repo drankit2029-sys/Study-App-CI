@@ -86,7 +86,7 @@ class PomodoroScreenshotTest {
             device.wait(Until.hasObject(By.text(pausedText)), 5_000L),
         )
         device.waitForIdle()
-        Thread.sleep(1200L)
+        Thread.sleep(3000L)
         capture(device, "03_notification_collapsed.png")
         device.pressBack()
         device.waitForIdle()
