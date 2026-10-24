@@ -87,17 +87,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
-            set +e
-            adb shell input keyevent 82
-            adb shell wm dismiss-keyguard
-            adb shell svc power stayon true
-            adb shell settings put system screen_off_timeout 600000
-            cd AndroidApp
-            ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace
-            test_exit=$?
-            mkdir -p ../Screenshots
-            adb pull /sdcard/Android/data/com.studyapp.pomodoro.nativeapp/files/screenshots/. ../Screenshots/ || true
-            exit $test_exit
+            set +e; adb shell input keyevent 82; adb shell wm dismiss-keyguard; adb shell svc power stayon true; adb shell settings put system screen_off_timeout 600000; cd AndroidApp; ./gradlew connectedDebugAndroidTest --no-daemon --stacktrace; test_exit=$?; mkdir -p ../Screenshots; adb pull /sdcard/Android/data/com.studyapp.pomodoro.nativeapp/files/screenshots/. ../Screenshots/ || true; exit $test_exit
 
       - name: Upload screenshots
         if: always()
