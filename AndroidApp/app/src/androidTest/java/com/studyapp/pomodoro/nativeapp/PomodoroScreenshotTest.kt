@@ -11,7 +11,6 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
-import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -108,17 +107,12 @@ class PomodoroScreenshotTest {
     }
 
     private fun capture(device: UiDevice, name: String) {
-        val directory = instrumentation.targetContext.getExternalFilesDir("screenshots")
-            ?: error("External files directory is unavailable")
-        directory.mkdirs()
-        val file = File(directory, name)
-        assertTrue("Could not capture $name", device.takeScreenshot(file))
         val publicDirectory = "/sdcard/Download/PomodoroScreenshots"
-        val copied = device.executeShellCommand(
-            "mkdir -p $publicDirectory && cp ${file.absolutePath} $publicDirectory/$name && " +
+        val output = device.executeShellCommand(
+            "mkdir -p $publicDirectory && screencap -p $publicDirectory/$name && " +
                 "test -f $publicDirectory/$name && echo copied",
         ).trim()
-        assertTrue("Could not copy $name to public storage", copied.endsWith("copied"))
+        assertTrue("Could not capture $name: $output", output.endsWith("copied"))
     }
 
     private fun waitForOngoingNotification(expectedText: String): Notification {
