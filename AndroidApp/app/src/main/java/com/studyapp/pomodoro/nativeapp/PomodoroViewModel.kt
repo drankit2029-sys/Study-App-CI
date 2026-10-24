@@ -12,22 +12,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 data class PomodoroUiState(
     val settings: SessionSettings = DefaultSettings,
     val phase: Phase = Phase.Focus,
-    val remainingMillisByPhase: Map<Phase, Long> = defaultRemainingMillisMap(DefaultSettings),
+    val sessionTotalMillisByPhase: Map<Phase, Long> = defaultDurationMillisMap(DefaultSettings),
+    val remainingMillisByPhase: Map<Phase, Long> = defaultDurationMillisMap(DefaultSettings),
     val isRunning: Boolean = false,
     val completedFocus: Int = 0,
     val focusedMinutes: Int = 0,
     val completion: CompletionInfo? = null,
 ) {
-    val totalSeconds: Int
-        get() = secondsFor(phase, settings)
+    val configuredMillis: Long
+        get() = millisFor(phase, settings)
 
     val totalMillis: Long
-        get() = millisFor(phase, settings)
+        get() = sessionTotalMillisByPhase[phase] ?: configuredMillis
+
+    val totalSeconds: Int
+        get() = (totalMillis / 1000L).toInt()
 
     val remainingMillis: Long
         get() = (remainingMillisByPhase[phase] ?: totalMillis).coerceIn(0L, totalMillis)
@@ -46,7 +49,7 @@ data class PomodoroUiState(
         }
 
     val canReset: Boolean
-        get() = isRunning || isMidSession
+        get() = isRunning || isMidSession || totalMillis != configuredMillis
 
     val sessionNumber: Int
         get() = (completedFocus % SessionsPerCycle) + 1
@@ -93,9 +96,6 @@ class PomodoroViewModel(
     val uiState: StateFlow<PomodoroUiState> = _uiState.asStateFlow()
 
     private var deadlineElapsed: Long? = savedStateHandle.get<Long>(KEY_DEADLINE)
-    private var focusAccumulatedMillis: Long =
-        savedStateHandle.get<Long>(KEY_FOCUS_ACCUMULATED_MS) ?: 0L
-    private var lastTickRealtime: Long? = null
     private var ticker: Job? = null
 
     init {
@@ -107,11 +107,10 @@ class PomodoroViewModel(
             if (remainingMs <= 0L) {
                 finishPhase()
             } else if (remainingMs <= current.totalMillis) {
-                lastTickRealtime = now
-                updateActiveRemainingMillis(remainingMs)
+                updateActiveRemainingMillis(remainingMs, forcePersist = true)
                 startTicker()
             } else {
-                // Device rebooted or clock reset; pause safely with saved remaining time
+                // Device rebooted or monotonic clock reset; pause safely with saved remaining time
                 deadlineElapsed = null
                 _uiState.update { it.copy(isRunning = false) }
                 persistState()
@@ -130,18 +129,19 @@ class PomodoroViewModel(
     fun reset() {
         val current = _uiState.value
         deadlineElapsed = null
-        lastTickRealtime = null
         stopTicker()
-        if (current.phase == Phase.Focus) {
-            focusAccumulatedMillis = 0L
+        val newDurationMs = millisFor(current.phase, current.settings)
+        val updatedTotals = current.sessionTotalMillisByPhase.toMutableMap().apply {
+            this[current.phase] = newDurationMs
         }
-        val resetMap = current.remainingMillisByPhase.toMutableMap().apply {
-            this[current.phase] = millisFor(current.phase, current.settings)
+        val updatedRemaining = current.remainingMillisByPhase.toMutableMap().apply {
+            this[current.phase] = newDurationMs
         }
         _uiState.update {
             it.copy(
                 isRunning = false,
-                remainingMillisByPhase = resetMap,
+                sessionTotalMillisByPhase = updatedTotals,
+                remainingMillisByPhase = updatedRemaining,
                 completion = null,
             )
         }
@@ -152,9 +152,8 @@ class PomodoroViewModel(
         val current = _uiState.value
         if (phase == current.phase || current.isRunning) return
         deadlineElapsed = null
-        lastTickRealtime = null
         stopTicker()
-        // Switching phases preserves each phase's paused remainingMillisByPhase entry
+        // Switching phases preserves each phase's paused remainingMillisByPhase & sessionTotalMillisByPhase
         _uiState.update {
             it.copy(
                 phase = phase,
@@ -172,37 +171,36 @@ class PomodoroViewModel(
         val nextValue = value.coerceIn(bounds.min, bounds.max)
         if (nextValue == current.settings.minutesFor(phase)) return
 
-        val oldTotalMillis = millisFor(phase, current.settings)
-        val oldRemainingMillis = current.remainingMillisByPhase[phase] ?: oldTotalMillis
-        val elapsedMillis = (oldTotalMillis - oldRemainingMillis).coerceAtLeast(0L)
-
         val nextSettings = when (phase) {
             Phase.Focus -> current.settings.copy(focus = nextValue)
             Phase.ShortBreak -> current.settings.copy(short = nextValue)
             Phase.LongBreak -> current.settings.copy(long = nextValue)
         }
-        val newTotalMillis = millisFor(phase, nextSettings)
 
-        // Preserve already-elapsed time if the phase was paused mid-session;
-        // if untouched or elapsed >= new duration, set to full new duration.
-        val nextRemainingMillis = if (elapsedMillis == 0L || elapsedMillis >= newTotalMillis) {
-            if (phase == Phase.Focus && elapsedMillis >= newTotalMillis) {
-                focusAccumulatedMillis = 0L
-            }
-            newTotalMillis
+        val phaseTotalMs = current.sessionTotalMillisByPhase[phase] ?: millisFor(phase, current.settings)
+        val phaseRemainingMs = (current.remainingMillisByPhase[phase] ?: phaseTotalMs)
+            .coerceIn(0L, phaseTotalMs)
+        val isPhasePausedMidSession = phaseRemainingMs in 1L until phaseTotalMs
+
+        // If the timer for this phase is paused mid-session, do NOT update the timer in real time;
+        // it will only adopt the new duration when Reset is pressed (or when the session finishes).
+        if (isPhasePausedMidSession) {
+            _uiState.update { it.copy(settings = nextSettings) }
         } else {
-            newTotalMillis - elapsedMillis
-        }
-
-        val updatedMap = current.remainingMillisByPhase.toMutableMap().apply {
-            this[phase] = nextRemainingMillis
-        }
-
-        _uiState.update {
-            it.copy(
-                settings = nextSettings,
-                remainingMillisByPhase = updatedMap,
-            )
+            val newTotalMillis = millisFor(phase, nextSettings)
+            val updatedTotals = current.sessionTotalMillisByPhase.toMutableMap().apply {
+                this[phase] = newTotalMillis
+            }
+            val updatedRemaining = current.remainingMillisByPhase.toMutableMap().apply {
+                this[phase] = newTotalMillis
+            }
+            _uiState.update {
+                it.copy(
+                    settings = nextSettings,
+                    sessionTotalMillisByPhase = updatedTotals,
+                    remainingMillisByPhase = updatedRemaining,
+                )
+            }
         }
         persistState()
     }
@@ -225,7 +223,6 @@ class PomodoroViewModel(
 
         val now = SystemClock.elapsedRealtime()
         deadlineElapsed = now + currentRemainingMs
-        lastTickRealtime = now
         _uiState.update { it.copy(isRunning = true, completion = null) }
         persistState()
         startTicker()
@@ -237,20 +234,18 @@ class PomodoroViewModel(
         val deadline = deadlineElapsed
         if (deadline != null) {
             val nextRemainingMs = (deadline - now).coerceAtLeast(0L)
-            recordElapsedFocusIfNeeded(now)
             deadlineElapsed = null
-            lastTickRealtime = null
             if (nextRemainingMs <= 0L) {
                 finishPhase()
                 return
             }
-            val updatedMap = current.remainingMillisByPhase.toMutableMap().apply {
+            val updatedRemaining = current.remainingMillisByPhase.toMutableMap().apply {
                 this[current.phase] = nextRemainingMs
             }
             stopTicker()
             _uiState.update {
                 it.copy(
-                    remainingMillisByPhase = updatedMap,
+                    remainingMillisByPhase = updatedRemaining,
                     isRunning = false,
                 )
             }
@@ -258,14 +253,11 @@ class PomodoroViewModel(
             return
         }
         stopTicker()
-        lastTickRealtime = null
         _uiState.update { it.copy(isRunning = false) }
         persistState()
     }
 
     private fun finishPhase() {
-        val now = SystemClock.elapsedRealtime()
-        recordElapsedFocusIfNeeded(now)
         val current = _uiState.value
 
         val nextCompletedFocus = if (current.phase == Phase.Focus) {
@@ -275,9 +267,8 @@ class PomodoroViewModel(
         }
 
         val addedFocusMinutes = if (current.phase == Phase.Focus) {
-            val actualMinutes = (focusAccumulatedMillis / 60_000.0).roundToInt()
-            focusAccumulatedMillis = 0L
-            actualMinutes.coerceAtLeast(1)
+            val sessionMinutes = (current.totalMillis / 60_000L).toInt()
+            sessionMinutes.coerceAtLeast(1)
         } else {
             0
         }
@@ -290,19 +281,26 @@ class PomodoroViewModel(
             Phase.Focus
         }
 
-        // Reset both the finished phase and the incoming next phase to their full durations
-        val updatedMap = current.remainingMillisByPhase.toMutableMap().apply {
-            this[current.phase] = millisFor(current.phase, current.settings)
-            this[nextPhase] = millisFor(nextPhase, current.settings)
+        // Reset both the finished phase and the incoming next phase to their configured durations
+        val finishedPhaseNewDuration = millisFor(current.phase, current.settings)
+        val nextPhaseNewDuration = millisFor(nextPhase, current.settings)
+
+        val updatedTotals = current.sessionTotalMillisByPhase.toMutableMap().apply {
+            this[current.phase] = finishedPhaseNewDuration
+            this[nextPhase] = nextPhaseNewDuration
+        }
+        val updatedRemaining = current.remainingMillisByPhase.toMutableMap().apply {
+            this[current.phase] = finishedPhaseNewDuration
+            this[nextPhase] = nextPhaseNewDuration
         }
 
         deadlineElapsed = null
-        lastTickRealtime = null
         stopTicker()
         _uiState.update {
             it.copy(
                 phase = nextPhase,
-                remainingMillisByPhase = updatedMap,
+                sessionTotalMillisByPhase = updatedTotals,
+                remainingMillisByPhase = updatedRemaining,
                 isRunning = false,
                 completedFocus = nextCompletedFocus,
                 focusedMinutes = nextFocusedMinutes,
@@ -320,21 +318,21 @@ class PomodoroViewModel(
         ticker?.cancel()
         ticker = viewModelScope.launch {
             while (isActive) {
-                delay(100)
+                delay(250)
                 val now = SystemClock.elapsedRealtime()
                 val deadline = deadlineElapsed ?: break
-                recordElapsedFocusIfNeeded(now)
                 val nextRemainingMs = (deadline - now).coerceAtLeast(0L)
                 if (nextRemainingMs <= 0L) {
                     finishPhase()
                     break
                 }
-                updateActiveRemainingMillis(nextRemainingMs)
+                updateActiveRemainingMillis(nextRemainingMs, forcePersist = false)
             }
         }
     }
 
-    private fun updateActiveRemainingMillis(remainingMs: Long) {
+    private fun updateActiveRemainingMillis(remainingMs: Long, forcePersist: Boolean) {
+        val previousSeconds = _uiState.value.remaining
         _uiState.update { state ->
             val currentMs = state.remainingMillisByPhase[state.phase]
             if (currentMs == remainingMs) {
@@ -346,15 +344,9 @@ class PomodoroViewModel(
                 state.copy(remainingMillisByPhase = updatedMap)
             }
         }
-        savedStateHandle[ remainingKeyFor(_uiState.value.phase) ] = remainingMs
-    }
-
-    private fun recordElapsedFocusIfNeeded(now: Long) {
-        val last = lastTickRealtime
-        lastTickRealtime = now
-        if (_uiState.value.phase == Phase.Focus && last != null && now > last) {
-            focusAccumulatedMillis += (now - last)
-            savedStateHandle[KEY_FOCUS_ACCUMULATED_MS] = focusAccumulatedMillis
+        val currentSeconds = _uiState.value.remaining
+        if (forcePersist || currentSeconds != previousSeconds) {
+            savedStateHandle[remainingKeyFor(_uiState.value.phase)] = remainingMs
         }
     }
 
@@ -372,8 +364,13 @@ class PomodoroViewModel(
         val phaseName = savedStateHandle.get<String>(KEY_PHASE)
         val phase = phaseName?.let { runCatching { Phase.valueOf(it) }.getOrNull() } ?: Phase.Focus
 
+        val totalsMap = Phase.entries.associateWith { p ->
+            savedStateHandle.get<Long>(totalKeyFor(p)) ?: millisFor(p, settings)
+        }
         val remainingMap = Phase.entries.associateWith { p ->
-            savedStateHandle.get<Long>(remainingKeyFor(p)) ?: millisFor(p, settings)
+            val totalForPhase = totalsMap.getValue(p)
+            (savedStateHandle.get<Long>(remainingKeyFor(p)) ?: totalForPhase)
+                .coerceIn(0L, totalForPhase)
         }
 
         val isRunning = savedStateHandle.get<Boolean>(KEY_IS_RUNNING) ?: false
@@ -383,6 +380,7 @@ class PomodoroViewModel(
         return PomodoroUiState(
             settings = settings,
             phase = phase,
+            sessionTotalMillisByPhase = totalsMap,
             remainingMillisByPhase = remainingMap,
             isRunning = isRunning,
             completedFocus = completedFocus,
@@ -397,16 +395,18 @@ class PomodoroViewModel(
         savedStateHandle[KEY_SETTING_LONG] = state.settings.long
         savedStateHandle[KEY_PHASE] = state.phase.name
         Phase.entries.forEach { p ->
+            val totalMs = state.sessionTotalMillisByPhase[p] ?: millisFor(p, state.settings)
+            savedStateHandle[totalKeyFor(p)] = totalMs
             savedStateHandle[remainingKeyFor(p)] =
-                state.remainingMillisByPhase[p] ?: millisFor(p, state.settings)
+                (state.remainingMillisByPhase[p] ?: totalMs).coerceIn(0L, totalMs)
         }
         savedStateHandle[KEY_IS_RUNNING] = state.isRunning
         savedStateHandle[KEY_COMPLETED_FOCUS] = state.completedFocus
         savedStateHandle[KEY_FOCUSED_MINUTES] = state.focusedMinutes
         savedStateHandle[KEY_DEADLINE] = deadlineElapsed
-        savedStateHandle[KEY_FOCUS_ACCUMULATED_MS] = focusAccumulatedMillis
     }
 
+    private fun totalKeyFor(phase: Phase): String = "total_ms_${phase.name}"
     private fun remainingKeyFor(phase: Phase): String = "remaining_ms_${phase.name}"
 
     companion object {
@@ -418,6 +418,5 @@ class PomodoroViewModel(
         private const val KEY_COMPLETED_FOCUS = "completed_focus"
         private const val KEY_FOCUSED_MINUTES = "focused_minutes"
         private const val KEY_DEADLINE = "deadline_elapsed"
-        private const val KEY_FOCUS_ACCUMULATED_MS = "focus_accumulated_ms"
     }
 }

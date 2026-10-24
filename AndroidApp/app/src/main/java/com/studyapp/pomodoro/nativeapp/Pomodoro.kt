@@ -44,7 +44,7 @@ fun secondsFor(phase: Phase, settings: SessionSettings): Int = settings.minutesF
 
 fun millisFor(phase: Phase, settings: SessionSettings): Long = secondsFor(phase, settings) * 1000L
 
-fun defaultRemainingMillisMap(settings: SessionSettings = DefaultSettings): Map<Phase, Long> =
+fun defaultDurationMillisMap(settings: SessionSettings = DefaultSettings): Map<Phase, Long> =
     Phase.entries.associateWith { phase -> millisFor(phase, settings) }
 
 fun formatClock(totalSeconds: Int): String {

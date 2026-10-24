@@ -104,6 +104,7 @@ fun PomodoroScreen(
             .fillMaxSize()
             .clipToBounds()
             .background(Ivory),
+        contentAlignment = Alignment.TopCenter,
     ) {
         BotanicalBranch(
             modifier = Modifier
@@ -113,6 +114,7 @@ fun PomodoroScreen(
         )
         Column(
             modifier = Modifier
+                .widthIn(max = 520.dp)
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .verticalScroll(rememberScrollState())
@@ -527,6 +529,7 @@ private fun SettingsCard(
             enabled = !state.isRunning,
         )
         if (state.isRunning) {
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = "Pause the timer to adjust your rhythm.",
                 color = Muted,
