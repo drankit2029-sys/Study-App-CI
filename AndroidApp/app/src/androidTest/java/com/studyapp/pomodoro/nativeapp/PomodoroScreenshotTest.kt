@@ -42,6 +42,7 @@ class PomodoroScreenshotTest {
         val device = UiDevice.getInstance(instrumentation)
         device.wakeUp()
         device.setOrientationNatural()
+        dismissSystemDialog(device)
         device.waitForIdle()
     }
 
@@ -114,9 +115,19 @@ class PomodoroScreenshotTest {
     }
 
     private fun capture(device: UiDevice, name: String) {
+        dismissSystemDialog(device)
         val directory = File(instrumentation.targetContext.filesDir, "screenshots")
         directory.mkdirs()
         assertTrue("Could not capture $name", device.takeScreenshot(File(directory, name)))
+    }
+
+    private fun dismissSystemDialog(device: UiDevice) {
+        val wait = device.findObject(By.text("Wait"))
+        if (wait != null) {
+            wait.click()
+            device.waitForIdle()
+            Thread.sleep(400L)
+        }
     }
 
     private fun waitForOngoingNotification(expectedText: String): Notification {
