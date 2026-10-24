@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -84,21 +86,22 @@ fun CompletionDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(24.dp),
+                .padding(16.dp),
             contentAlignment = Alignment.Center,
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 350.dp)
+                    .widthIn(max = 370.dp)
                     .fillMaxWidth()
+                    .heightIn(max = maxHeight)
                     .softRaised(Paper, 26.dp, 20.dp)
                     .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(26.dp))
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
+                    .padding(22.dp),
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Row(

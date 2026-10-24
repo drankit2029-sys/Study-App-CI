@@ -11,6 +11,7 @@
     <string name="notification_action_resume">Resume</string>
     <string name="notification_action_reset">Reset</string>
     <string name="notification_action_open">Open</string>
+    <string name="notification_action_silence">Silence</string>
     <string name="notification_action_start_next">Start next</string>
     <string name="notification_complete_focus">Focus complete</string>
     <string name="notification_complete_break">Break complete</string>

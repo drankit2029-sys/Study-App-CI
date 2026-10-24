@@ -1,12 +1,21 @@
 package com.studyapp.pomodoro.nativeapp.ui
 
+import android.app.Activity
+import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,14 +36,17 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,30 +54,42 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.IntentCompat
+import com.studyapp.pomodoro.nativeapp.DEFAULT_ALARM_SOUND
 import com.studyapp.pomodoro.nativeapp.Phase
 import com.studyapp.pomodoro.nativeapp.PomodoroUiState
+import com.studyapp.pomodoro.nativeapp.SILENT_ALARM_SOUND
 import com.studyapp.pomodoro.nativeapp.SessionsPerCycle
 import com.studyapp.pomodoro.nativeapp.SettingBounds
 import com.studyapp.pomodoro.nativeapp.formatClock
 import com.studyapp.pomodoro.nativeapp.heading
+import com.studyapp.pomodoro.nativeapp.ui.components.AlarmSettingsDialog
 import com.studyapp.pomodoro.nativeapp.ui.components.BotanicalBranch
 import com.studyapp.pomodoro.nativeapp.ui.components.CompletionDialog
 import com.studyapp.pomodoro.nativeapp.ui.components.ModeTabs
@@ -92,19 +116,66 @@ fun PomodoroScreen(
     onReset: () -> Unit,
     onSelectPhase: (Phase) -> Unit,
     onUpdateSetting: (Phase, Int) -> Unit,
+    onResetDaily: () -> Unit,
+    onUpdateAlarmEnabled: (Boolean) -> Unit,
+    onUpdateAlarmSound: (String) -> Unit,
+    onUpdateAlarmVibration: (Boolean) -> Unit,
+    onUpdateAlarmDuration: (Int) -> Unit,
+    onPreviewAlarm: () -> Unit,
+    onStopAlarm: () -> Unit,
     onDismissCompletion: () -> Unit,
     onStartNext: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
     val view = LocalView.current
+    var showAlarmSettings by rememberSaveable { mutableStateOf(false) }
+    val ringtonePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { data ->
+                val pickedUri = IntentCompat.getParcelableExtra(
+                    data,
+                    RingtoneManager.EXTRA_RINGTONE_PICKED_URI,
+                    Uri::class.java,
+                )
+                onUpdateAlarmSound(pickedUri?.toString() ?: SILENT_ALARM_SOUND)
+            }
+        }
+    }
     SideEffect { view.keepScreenOn = state.isRunning }
     DisposableEffect(Unit) {
         onDispose { view.keepScreenOn = false }
     }
     LaunchedEffect(state.completion) {
         if (state.completion != null) {
+            showAlarmSettings = false
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         }
+    }
+
+    val openAlarmSettings = { showAlarmSettings = true }
+    val openRingtonePicker = {
+        val existingUri = when (state.alarm.sound) {
+            DEFAULT_ALARM_SOUND -> RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            SILENT_ALARM_SOUND -> null
+            else -> runCatching { Uri.parse(state.alarm.sound) }.getOrNull()
+        }
+        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+            putExtra(
+                RingtoneManager.EXTRA_RINGTONE_TYPE,
+                RingtoneManager.TYPE_ALARM,
+            )
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+            putExtra(
+                RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI,
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+            )
+            putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, existingUri)
+            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "Pomodoro alarm")
+        }
+        ringtonePicker.launch(intent)
     }
 
     BoxWithConstraints(
@@ -115,19 +186,22 @@ fun PomodoroScreen(
         contentAlignment = Alignment.TopCenter,
     ) {
         val isLandscape = maxWidth > maxHeight
+        val useTwoPane = isLandscape && maxWidth >= 700.dp && maxHeight >= 320.dp
         BotanicalBranch(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(x = if (isLandscape) 44.dp else 52.dp, y = (-18).dp)
                 .size(if (isLandscape) 112.dp else 132.dp),
         )
-        if (isLandscape) {
+        if (useTwoPane) {
             LandscapeContent(
                 state = state,
                 onToggle = onToggle,
                 onReset = onReset,
                 onSelectPhase = onSelectPhase,
                 onUpdateSetting = onUpdateSetting,
+                onResetDaily = onResetDaily,
+                onOpenAlarmSettings = openAlarmSettings,
             )
         } else {
             PortraitContent(
@@ -136,8 +210,25 @@ fun PomodoroScreen(
                 onReset = onReset,
                 onSelectPhase = onSelectPhase,
                 onUpdateSetting = onUpdateSetting,
+                onResetDaily = onResetDaily,
+                onOpenAlarmSettings = openAlarmSettings,
             )
         }
+    }
+
+    if (showAlarmSettings && state.completion == null) {
+        AlarmSettingsDialog(
+            settings = state.alarm,
+            onDismiss = {
+                onStopAlarm()
+                showAlarmSettings = false
+            },
+            onEnabledChange = onUpdateAlarmEnabled,
+            onSoundClick = openRingtonePicker,
+            onVibrationChange = onUpdateAlarmVibration,
+            onDurationChange = onUpdateAlarmDuration,
+            onPreview = onPreviewAlarm,
+        )
     }
 
     state.completion?.let { completion ->
@@ -157,17 +248,19 @@ private fun PortraitContent(
     onReset: () -> Unit,
     onSelectPhase: (Phase) -> Unit,
     onUpdateSetting: (Phase, Int) -> Unit,
+    onResetDaily: () -> Unit,
+    onOpenAlarmSettings: () -> Unit,
 ) {
     Column(
         modifier = Modifier
-            .widthIn(max = 520.dp)
-            .fillMaxSize()
+            .widthIn(max = 560.dp)
+            .fillMaxHeight()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(top = 18.dp, bottom = 36.dp),
     ) {
-        Header()
+        Header(onOpenAlarmSettings = onOpenAlarmSettings)
         Spacer(Modifier.height(24.dp))
         TimerCard(
             state = state,
@@ -176,7 +269,7 @@ private fun PortraitContent(
             onSelectPhase = onSelectPhase,
         )
         Spacer(Modifier.height(16.dp))
-        RhythmCard(state)
+        RhythmCard(state = state, onResetDaily = onResetDaily)
         Spacer(Modifier.height(16.dp))
         SettingsCard(state = state, onUpdateSetting = onUpdateSetting)
         Spacer(Modifier.height(26.dp))
@@ -191,14 +284,17 @@ private fun LandscapeContent(
     onReset: () -> Unit,
     onSelectPhase: (Phase) -> Unit,
     onUpdateSetting: (Phase, Int) -> Unit,
+    onResetDaily: () -> Unit,
+    onOpenAlarmSettings: () -> Unit,
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .widthIn(max = 1280.dp)
+            .fillMaxHeight()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(horizontal = 20.dp, vertical = 10.dp),
     ) {
-        LandscapeHeader()
+        LandscapeHeader(onOpenAlarmSettings = onOpenAlarmSettings)
         Spacer(Modifier.height(10.dp))
         Row(
             modifier = Modifier
@@ -226,7 +322,11 @@ private fun LandscapeContent(
                     .fillMaxHeight()
                     .verticalScroll(rememberScrollState()),
             ) {
-                RhythmCard(state = state, compact = true)
+                RhythmCard(
+                    state = state,
+                    compact = true,
+                    onResetDaily = onResetDaily,
+                )
                 Spacer(Modifier.height(10.dp))
                 LandscapeSettingsCard(state = state, onUpdateSetting = onUpdateSetting)
             }
@@ -235,80 +335,103 @@ private fun LandscapeContent(
 }
 
 @Composable
-private fun LandscapeHeader() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "STUDY / RHYTHM",
-            color = Forest,
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
-                letterSpacing = 3.2.sp,
-            ),
-        )
-        Spacer(Modifier.width(12.dp))
-        Text(
-            text = "Pomodoro",
-            color = Ink,
-            maxLines = 1,
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontSize = 30.sp,
-                lineHeight = 32.sp,
-            ),
-        )
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = "A softer way to protect your focus.",
-            color = Muted,
-            textAlign = TextAlign.End,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 240.dp),
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
-            ),
-        )
-        Spacer(Modifier.width(12.dp))
-        Box(
-            modifier = Modifier
-                .width(28.dp)
-                .height(1.dp)
-                .background(Stone),
-        )
+private fun LandscapeHeader(onOpenAlarmSettings: () -> Unit) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val showTagline = maxWidth >= 800.dp
+        val titleSize = if (maxWidth < 780.dp) 25.sp else 30.sp
+        val titleLineHeight = if (maxWidth < 780.dp) 27.sp else 32.sp
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "STUDY / RHYTHM",
+                color = Forest,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    letterSpacing = 3.2.sp,
+                ),
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                text = "Pomodoro",
+                color = Ink,
+                maxLines = 1,
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontSize = titleSize,
+                    lineHeight = titleLineHeight,
+                ),
+            )
+            Spacer(Modifier.weight(1f))
+            if (showTagline) {
+                Text(
+                    text = "A softer way to protect your focus.",
+                    color = Muted,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = 240.dp),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                    ),
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            SoftIconButton(
+                icon = Icons.Outlined.Alarm,
+                contentDescription = "Alarm settings",
+                onClick = onOpenAlarmSettings,
+                size = 42.dp,
+                iconSize = 18.dp,
+            )
+        }
     }
 }
 
 @Composable
-private fun Header() {
+private fun Header(onOpenAlarmSettings: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "STUDY / RHYTHM",
-            color = Forest,
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontSize = 17.sp,
-                lineHeight = 22.sp,
-                fontWeight = FontWeight.Light,
-                letterSpacing = 4.6.sp,
-            ),
-        )
-        Spacer(Modifier.height(10.dp))
-        Text(
-            text = "Pomodoro",
-            color = Ink,
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontSize = 46.sp,
-                lineHeight = 48.sp,
-            ),
-        )
-        Text(
-            text = "A softer way to protect your focus.",
-            color = Muted,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "STUDY / RHYTHM",
+                    color = Forest,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontSize = 17.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Light,
+                        letterSpacing = 4.6.sp,
+                    ),
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "Pomodoro",
+                    color = Ink,
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontSize = 46.sp,
+                        lineHeight = 48.sp,
+                    ),
+                )
+                Text(
+                    text = "A softer way to protect your focus.",
+                    color = Muted,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            SoftIconButton(
+                icon = Icons.Outlined.Alarm,
+                contentDescription = "Alarm settings",
+                onClick = onOpenAlarmSettings,
+                size = 44.dp,
+                iconSize = 19.dp,
+            )
+        }
         Spacer(Modifier.height(18.dp))
         Box(
             modifier = Modifier
@@ -541,6 +664,7 @@ private fun StatusRow(state: PomodoroUiState) {
 @Composable
 private fun RhythmCard(
     state: PomodoroUiState,
+    onResetDaily: () -> Unit,
     compact: Boolean = false,
 ) {
     val goalCount = minOf(state.completedFocus, SessionsPerCycle)
@@ -550,11 +674,6 @@ private fun RhythmCard(
         animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
         label = "goalProgress",
     )
-    val caption = when {
-        state.completedFocus == 0 -> "A GENTLE START"
-        state.completedFocus < SessionsPerCycle -> "ALMOST THERE"
-        else -> "CYCLE COMPLETE"
-    }
 
     Column(
         modifier = Modifier
@@ -562,7 +681,18 @@ private fun RhythmCard(
             .softRaised(Paper, if (compact) 22.dp else 24.dp, if (compact) 6.dp else 7.dp)
             .padding(if (compact) 14.dp else 20.dp),
     ) {
-        SectionLabel(index = "02", title = "TODAY'S RHYTHM")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionLabel(index = "02", title = "TODAY'S RHYTHM")
+            ResetTodayButton(
+                enabled = state.canResetDaily,
+                compact = compact,
+                onClick = onResetDaily,
+            )
+        }
         Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -614,11 +744,11 @@ private fun RhythmCard(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = caption,
+                text = "AUTO RESET · 12:00 AM",
                 color = Muted,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = if (compact) 10.sp else 11.sp,
-                    letterSpacing = 1.4.sp,
+                    fontSize = if (compact) 9.sp else 10.sp,
+                    letterSpacing = 1.2.sp,
                 ),
             )
             Text(
@@ -630,6 +760,50 @@ private fun RhythmCard(
                 ),
             )
         }
+    }
+}
+
+@Composable
+private fun ResetTodayButton(
+    enabled: Boolean,
+    compact: Boolean,
+    onClick: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val contentColor = if (enabled) Forest else Muted.copy(alpha = 0.45f)
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                enabled = enabled,
+                role = Role.Button,
+            ) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
+            .semantics { contentDescription = "Reset today's sessions" }
+            .padding(horizontal = 6.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Refresh,
+            contentDescription = null,
+            tint = contentColor,
+            modifier = Modifier.size(if (compact) 12.dp else 13.dp),
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = "RESET TODAY",
+            color = contentColor,
+            maxLines = 1,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = if (compact) 8.sp else 9.sp,
+                letterSpacing = 1.0.sp,
+            ),
+        )
     }
 }
 

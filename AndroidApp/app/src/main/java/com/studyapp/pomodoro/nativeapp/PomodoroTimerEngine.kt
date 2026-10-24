@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.time.ZonedDateTime
 
 class PomodoroTimerEngine private constructor(context: Context) {
 
@@ -25,6 +26,8 @@ class PomodoroTimerEngine private constructor(context: Context) {
 
     private var deadlineElapsed: Long? = null
     private var ticker: Job? = null
+    private var dayEpoch: Long = currentEpochDay()
+    private var lastDayCheckElapsed: Long = 0L
 
     private val _state: MutableStateFlow<PomodoroUiState>
     val state: StateFlow<PomodoroUiState>
@@ -42,9 +45,11 @@ class PomodoroTimerEngine private constructor(context: Context) {
                 startTicker()
             }
         }
+        startDayWatcher()
     }
 
     fun toggle(shouldStartService: Boolean = true) {
+        ensureDailyReset()
         if (_state.value.isRunning) {
             pause(shouldStartService)
         } else {
@@ -53,6 +58,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
     }
 
     fun reset() {
+        PomodoroAlarmPlayer.stop()
         val current = _state.value
         deadlineElapsed = null
         stopTicker()
@@ -82,6 +88,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
         val current = _state.value
         if (phase == current.phase || current.isRunning || current.isMidSession) return
 
+        PomodoroAlarmPlayer.stop()
         deadlineElapsed = null
         stopTicker()
         _state.update {
@@ -137,13 +144,70 @@ class PomodoroTimerEngine private constructor(context: Context) {
         persistState()
     }
 
+    fun resetDailySessions() {
+        dayEpoch = currentEpochDay()
+        _state.update { it.copy(completedFocus = 0, focusedMinutes = 0) }
+        persistState()
+    }
+
+    fun ensureDailyReset() {
+        val today = currentEpochDay()
+        if (today == dayEpoch) return
+        dayEpoch = today
+        _state.update { it.copy(completedFocus = 0, focusedMinutes = 0) }
+        persistState()
+    }
+
+    fun updateAlarmEnabled(enabled: Boolean) {
+        _state.update { it.copy(alarm = it.alarm.copy(enabled = enabled)) }
+        if (!enabled) {
+            PomodoroAlarmPlayer.stop()
+        }
+        persistState()
+    }
+
+    fun updateAlarmSound(sound: String) {
+        _state.update { it.copy(alarm = it.alarm.copy(sound = sound)) }
+        persistState()
+    }
+
+    fun updateAlarmVibration(enabled: Boolean) {
+        _state.update { it.copy(alarm = it.alarm.copy(vibration = enabled)) }
+        if (!enabled) {
+            PomodoroAlarmPlayer.stop()
+        }
+        persistState()
+    }
+
+    fun updateAlarmDuration(seconds: Int) {
+        val safeSeconds = seconds.coerceIn(5, 120)
+        _state.update { it.copy(alarm = it.alarm.copy(durationSeconds = safeSeconds)) }
+        persistState()
+    }
+
+    fun previewAlarm() {
+        PomodoroAlarmPlayer.play(appContext, _state.value.alarm, preview = true)
+    }
+
+    fun stopAlarm() {
+        PomodoroAlarmPlayer.stop()
+    }
+
+    fun completeCurrentPhaseForTesting() {
+        val current = _state.value
+        if (!current.isRunning && !current.isMidSession) return
+        finishPhase()
+    }
+
     fun dismissCompletion() {
+        PomodoroAlarmPlayer.stop()
         PomodoroNotifications.cancelCompletion(appContext)
         _state.update { it.copy(completion = null) }
         persistState()
     }
 
     fun startNext(shouldStartService: Boolean = true) {
+        PomodoroAlarmPlayer.stop()
         PomodoroNotifications.cancelCompletion(appContext)
         _state.update { it.copy(completion = null) }
         start(shouldStartService)
@@ -159,6 +223,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
     }
 
     fun ensureTicker() {
+        ensureDailyReset()
         if (!_state.value.isRunning) return
         if (deadlineElapsed == null) {
             deadlineElapsed = SystemClock.elapsedRealtime() + _state.value.remainingMillis
@@ -170,6 +235,8 @@ class PomodoroTimerEngine private constructor(context: Context) {
     }
 
     private fun start(shouldStartService: Boolean = true) {
+        ensureDailyReset()
+        PomodoroAlarmPlayer.stop()
         val current = _state.value
         if (current.isRunning) return
 
@@ -217,6 +284,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
     }
 
     private fun finishPhase() {
+        ensureDailyReset()
         val current = _state.value
 
         val nextCompletedFocus = if (current.phase == Phase.Focus) {
@@ -270,6 +338,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
         _state.value = finishedState
         persistState()
         PomodoroNotifications.showCompletion(appContext, finishedState)
+        PomodoroAlarmPlayer.play(appContext, finishedState.alarm)
         PomodoroTimerService.stop(appContext)
     }
 
@@ -278,14 +347,29 @@ class PomodoroTimerEngine private constructor(context: Context) {
         ticker = scope.launch {
             while (isActive) {
                 delay(250L)
+                val nowElapsed = SystemClock.elapsedRealtime()
+                if (nowElapsed - lastDayCheckElapsed >= 30_000L) {
+                    lastDayCheckElapsed = nowElapsed
+                    ensureDailyReset()
+                }
                 val deadline = deadlineElapsed ?: break
                 val remainingMillis =
-                    (deadline - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+                    (deadline - nowElapsed).coerceAtLeast(0L)
                 if (remainingMillis <= 0L) {
                     finishPhase()
                     break
                 }
                 updateRemaining(remainingMillis)
+            }
+        }
+    }
+
+    private fun startDayWatcher() {
+        scope.launch {
+            while (isActive) {
+                val delayMillis = nextMidnightDelayMillis(ZonedDateTime.now())
+                delay(delayMillis + 500L)
+                ensureDailyReset()
             }
         }
     }
@@ -331,8 +415,28 @@ class PomodoroTimerEngine private constructor(context: Context) {
         }.toMutableMap()
 
         val savedRunning = preferences.getBoolean(KEY_IS_RUNNING, false)
-        val completedFocus = preferences.getInt(KEY_COMPLETED_FOCUS, 0)
-        val focusedMinutes = preferences.getInt(KEY_FOCUSED_MINUTES, 0)
+        val today = currentEpochDay()
+        val savedDay = if (preferences.contains(KEY_DAY_EPOCH)) {
+            preferences.getLong(KEY_DAY_EPOCH, today)
+        } else {
+            today
+        }
+        val dailyRecord = DailyRhythmRecord(
+            dayEpoch = savedDay,
+            completedFocus = preferences.getInt(KEY_COMPLETED_FOCUS, 0),
+            focusedMinutes = preferences.getInt(KEY_FOCUSED_MINUTES, 0),
+        ).resetIfNeeded(today)
+        dayEpoch = dailyRecord.dayEpoch
+        val completedFocus = dailyRecord.completedFocus
+        val focusedMinutes = dailyRecord.focusedMinutes
+        val alarm = AlarmSettings(
+            enabled = preferences.getBoolean(KEY_ALARM_ENABLED, true),
+            sound = preferences.getString(KEY_ALARM_SOUND, DEFAULT_ALARM_SOUND)
+                ?: DEFAULT_ALARM_SOUND,
+            vibration = preferences.getBoolean(KEY_ALARM_VIBRATION, true),
+            durationSeconds = preferences.getInt(KEY_ALARM_DURATION, 20)
+                .coerceIn(5, 120),
+        )
 
         var running = savedRunning
         var finishImmediately = false
@@ -380,6 +484,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
             isRunning = running || finishImmediately,
             completedFocus = completedFocus,
             focusedMinutes = focusedMinutes,
+            alarm = alarm,
         )
     }
 
@@ -406,6 +511,11 @@ class PomodoroTimerEngine private constructor(context: Context) {
         editor.putBoolean(KEY_IS_RUNNING, current.isRunning)
         editor.putInt(KEY_COMPLETED_FOCUS, current.completedFocus)
         editor.putInt(KEY_FOCUSED_MINUTES, current.focusedMinutes)
+        editor.putLong(KEY_DAY_EPOCH, dayEpoch)
+        editor.putBoolean(KEY_ALARM_ENABLED, current.alarm.enabled)
+        editor.putString(KEY_ALARM_SOUND, current.alarm.sound)
+        editor.putBoolean(KEY_ALARM_VIBRATION, current.alarm.vibration)
+        editor.putInt(KEY_ALARM_DURATION, current.alarm.durationSeconds)
         editor.putLong(KEY_DEADLINE, deadlineElapsed ?: -1L)
         editor.putInt(KEY_BOOT_COUNT, currentBootCount())
         editor.apply()
@@ -437,6 +547,11 @@ class PomodoroTimerEngine private constructor(context: Context) {
         private const val KEY_IS_RUNNING = "is_running"
         private const val KEY_COMPLETED_FOCUS = "completed_focus"
         private const val KEY_FOCUSED_MINUTES = "focused_minutes"
+        private const val KEY_DAY_EPOCH = "daily_rhythm_day_epoch"
+        private const val KEY_ALARM_ENABLED = "alarm_enabled"
+        private const val KEY_ALARM_SOUND = "alarm_sound"
+        private const val KEY_ALARM_VIBRATION = "alarm_vibration"
+        private const val KEY_ALARM_DURATION = "alarm_duration_seconds"
         private const val KEY_DEADLINE = "deadline_elapsed"
         private const val KEY_BOOT_COUNT = "boot_count"
 

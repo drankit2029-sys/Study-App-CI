@@ -9,6 +9,7 @@ data class PomodoroUiState(
     val completedFocus: Int = 0,
     val focusedMinutes: Int = 0,
     val completion: CompletionInfo? = null,
+    val alarm: AlarmSettings = AlarmSettings(),
 ) {
     val configuredMillis: Long
         get() = millisFor(phase, settings)
@@ -37,6 +38,9 @@ data class PomodoroUiState(
 
     val canReset: Boolean
         get() = isRunning || isMidSession || totalMillis != configuredMillis
+
+    val canResetDaily: Boolean
+        get() = completedFocus > 0 || focusedMinutes > 0
 
     val sessionNumber: Int
         get() = (completedFocus % SessionsPerCycle) + 1

@@ -44,6 +44,13 @@ class MainActivity : ComponentActivity() {
                     onReset = viewModel::reset,
                     onSelectPhase = viewModel::selectPhase,
                     onUpdateSetting = viewModel::updateSetting,
+                    onResetDaily = viewModel::resetDailySessions,
+                    onUpdateAlarmEnabled = viewModel::updateAlarmEnabled,
+                    onUpdateAlarmSound = viewModel::updateAlarmSound,
+                    onUpdateAlarmVibration = viewModel::updateAlarmVibration,
+                    onUpdateAlarmDuration = viewModel::updateAlarmDuration,
+                    onPreviewAlarm = viewModel::previewAlarm,
+                    onStopAlarm = viewModel::stopAlarm,
                     onDismissCompletion = viewModel::dismissCompletion,
                     onStartNext = {
                         requestNotificationPermissionIfNeeded()
@@ -56,7 +63,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        PomodoroTimerEngine.getInstance(this).ensureServiceIfNeeded()
+        PomodoroTimerEngine.getInstance(this).apply {
+            ensureDailyReset()
+            ensureServiceIfNeeded()
+        }
     }
 
     private fun requestNotificationPermissionIfNeeded() {

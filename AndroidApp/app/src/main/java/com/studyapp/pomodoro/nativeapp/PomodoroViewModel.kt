@@ -18,6 +18,20 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
 
     fun updateSetting(phase: Phase, value: Int) = engine.updateSetting(phase, value)
 
+    fun resetDailySessions() = engine.resetDailySessions()
+
+    fun updateAlarmEnabled(enabled: Boolean) = engine.updateAlarmEnabled(enabled)
+
+    fun updateAlarmSound(sound: String) = engine.updateAlarmSound(sound)
+
+    fun updateAlarmVibration(enabled: Boolean) = engine.updateAlarmVibration(enabled)
+
+    fun updateAlarmDuration(seconds: Int) = engine.updateAlarmDuration(seconds)
+
+    fun previewAlarm() = engine.previewAlarm()
+
+    fun stopAlarm() = engine.stopAlarm()
+
     fun dismissCompletion() = engine.dismissCompletion()
 
     fun startNext() = engine.startNext()

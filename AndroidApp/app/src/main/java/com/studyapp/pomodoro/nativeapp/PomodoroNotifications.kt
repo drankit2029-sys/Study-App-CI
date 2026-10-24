@@ -21,12 +21,14 @@ import kotlin.math.roundToInt
 object PomodoroNotifications {
 
     const val CHANNEL_TIMER = "pomodoro_timer"
-    const val CHANNEL_COMPLETION = "pomodoro_completion"
+    const val CHANNEL_COMPLETION = "pomodoro_completion_alarm"
+    private const val LEGACY_CHANNEL_COMPLETION = "pomodoro_completion"
     const val ONGOING_NOTIFICATION_ID = 4101
     const val COMPLETION_NOTIFICATION_ID = 4102
 
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_COMPLETION)
         val timerChannel = NotificationChannel(
             CHANNEL_TIMER,
             context.getString(R.string.notification_channel_timer),
@@ -45,6 +47,8 @@ object PomodoroNotifications {
         ).apply {
             description = context.getString(R.string.notification_channel_completion_description)
             setShowBadge(true)
+            enableVibration(false)
+            setSound(null, null)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
         manager.createNotificationChannels(listOf(timerChannel, completionChannel))
@@ -175,6 +179,12 @@ object PomodoroNotifications {
             requestCode = 21,
             foreground = true,
         )
+        val stopAlarmIntent = servicePendingIntent(
+            context = context,
+            action = PomodoroTimerService.ACTION_STOP_ALARM,
+            requestCode = 22,
+            foreground = false,
+        )
 
         val compact = RemoteViews(context.packageName, R.layout.notification_pomodoro_compact).apply {
             setTextViewText(
@@ -202,9 +212,14 @@ object PomodoroNotifications {
                     R.id.notification_action_secondary,
                     context.getString(R.string.notification_action_open),
                 )
-                setViewVisibility(R.id.notification_action_tertiary, View.GONE)
+                setTextViewText(
+                    R.id.notification_action_tertiary,
+                    context.getString(R.string.notification_action_silence),
+                )
+                setViewVisibility(R.id.notification_action_tertiary, View.VISIBLE)
                 setOnClickPendingIntent(R.id.notification_action_primary, startNextIntent)
                 setOnClickPendingIntent(R.id.notification_action_secondary, openIntent)
+                setOnClickPendingIntent(R.id.notification_action_tertiary, stopAlarmIntent)
             }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_COMPLETION)

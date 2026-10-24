@@ -56,6 +56,7 @@ class PomodoroTimerService : Service() {
             ACTION_TOGGLE -> engine.toggle(shouldStartService = false)
             ACTION_RESET -> engine.reset()
             ACTION_START_NEXT -> engine.startNext(shouldStartService = false)
+            ACTION_STOP_ALARM -> engine.stopAlarm()
             ACTION_START, null -> engine.ensureTicker()
         }
 
@@ -165,6 +166,7 @@ class PomodoroTimerService : Service() {
         const val ACTION_TOGGLE = "com.studyapp.pomodoro.nativeapp.action.TOGGLE"
         const val ACTION_RESET = "com.studyapp.pomodoro.nativeapp.action.RESET"
         const val ACTION_START_NEXT = "com.studyapp.pomodoro.nativeapp.action.START_NEXT"
+        const val ACTION_STOP_ALARM = "com.studyapp.pomodoro.nativeapp.action.STOP_ALARM"
 
         private const val MAX_WAKE_LOCK_MILLIS = 2L * 60L * 60L * 1000L
 
