@@ -135,6 +135,9 @@ class PomodoroScreenshotTest {
         capture(device, "05_alarm_settings.png")
 
         composeRule.onNodeWithText("RING FOR").scrollIntoView().assertIsDisplayed()
+        composeRule.onNodeWithText("30s").performClick()
+        composeRule.waitForIdle()
+        assertEquals(30, engine.state.value.alarm.durationSeconds)
         composeRule.onNodeWithText("Preview alarm").assertExists()
         capture(device, "06_alarm_settings_durations.png")
 
