@@ -10,7 +10,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -78,7 +80,11 @@ class PomodoroScreenshotTest {
             (pausedNotification.flags and Notification.FLAG_ONGOING_EVENT) != 0,
         )
 
-        device.openNotification()
+        device.executeShellCommand("cmd statusbar expand-notifications")
+        assertTrue(
+            "Notification shade did not open",
+            device.wait(Until.hasObject(By.text(pausedText)), 5_000L),
+        )
         device.waitForIdle()
         Thread.sleep(1200L)
         capture(device, "03_notification_collapsed.png")
