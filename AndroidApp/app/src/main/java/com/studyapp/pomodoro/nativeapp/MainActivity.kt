@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        PomodoroTimerEngine.getInstance(this).ensureServiceIfRunning()
+        PomodoroTimerEngine.getInstance(this).ensureServiceIfNeeded()
     }
 
     private fun requestNotificationPermissionIfNeeded() {

@@ -44,11 +44,11 @@ class PomodoroTimerEngine private constructor(context: Context) {
         }
     }
 
-    fun toggle() {
+    fun toggle(shouldStartService: Boolean = true) {
         if (_state.value.isRunning) {
-            pause()
+            pause(shouldStartService)
         } else {
-            start()
+            start(shouldStartService)
         }
     }
 
@@ -80,7 +80,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
 
     fun selectPhase(phase: Phase) {
         val current = _state.value
-        if (phase == current.phase || current.isRunning) return
+        if (phase == current.phase || current.isRunning || current.isMidSession) return
 
         deadlineElapsed = null
         stopTicker()
@@ -149,8 +149,9 @@ class PomodoroTimerEngine private constructor(context: Context) {
         start(shouldStartService)
     }
 
-    fun ensureServiceIfRunning() {
-        if (_state.value.isRunning) {
+    fun ensureServiceIfNeeded() {
+        val current = _state.value
+        if (current.isRunning || current.isMidSession) {
             startService()
         } else {
             PomodoroTimerService.stop(appContext)
@@ -185,7 +186,7 @@ class PomodoroTimerEngine private constructor(context: Context) {
         }
     }
 
-    private fun pause() {
+    private fun pause(shouldStartService: Boolean = true) {
         val current = _state.value
         val deadline = deadlineElapsed
 
@@ -201,14 +202,18 @@ class PomodoroTimerEngine private constructor(context: Context) {
             updateRemaining(remainingMillis)
             _state.update { it.copy(isRunning = false) }
             persistState()
-            PomodoroTimerService.stop(appContext)
+            if (shouldStartService) {
+                startService()
+            }
             return
         }
 
         stopTicker()
         _state.update { it.copy(isRunning = false) }
         persistState()
-        PomodoroTimerService.stop(appContext)
+        if (shouldStartService) {
+            startService()
+        }
     }
 
     private fun finishPhase() {

@@ -70,7 +70,7 @@ data class PomodoroUiState(
     val statusText: String
         get() = when {
             isRunning -> "The room is quiet. Your focus is protected."
-            isMidSession -> "Paused. Begin again when you are ready."
+            isMidSession -> "Paused. Resume or reset before switching modes."
             else -> "Begin gently. The screen will stay awake while you focus."
         }
 }

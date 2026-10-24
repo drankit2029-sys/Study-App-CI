@@ -53,7 +53,13 @@ object PomodoroNotifications {
     fun buildOngoing(context: Context, state: PomodoroUiState): Notification {
         val phaseLabel = state.phase.heading.uppercase(Locale.getDefault())
         val clock = formatClock(state.remaining)
-        val status = context.getString(R.string.notification_status_running)
+        val status = context.getString(
+            if (state.isRunning) {
+                R.string.notification_status_running
+            } else {
+                R.string.notification_status_paused
+            },
+        )
         val openIntent = openAppIntent(context)
         val toggleIntent = servicePendingIntent(
             context = context,

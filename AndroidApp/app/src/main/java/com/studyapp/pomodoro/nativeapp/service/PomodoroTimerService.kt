@@ -37,7 +37,7 @@ class PomodoroTimerService : Service() {
         stateJob = serviceScope.launch {
             engine.state.collect { state ->
                 if (!foregroundStarted) return@collect
-                if (!state.isRunning || state.completion != null) {
+                if (state.completion != null || (!state.isRunning && !state.isMidSession)) {
                     stopSelf()
                     return@collect
                 }
@@ -53,14 +53,14 @@ class PomodoroTimerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_TOGGLE -> engine.toggle()
+            ACTION_TOGGLE -> engine.toggle(shouldStartService = false)
             ACTION_RESET -> engine.reset()
             ACTION_START_NEXT -> engine.startNext(shouldStartService = false)
             ACTION_START, null -> engine.ensureTicker()
         }
 
         val state = engine.state.value
-        if (state.isRunning && state.completion == null) {
+        if (state.completion == null && (state.isRunning || state.isMidSession)) {
             ensureForeground(state)
         } else {
             stopSelf()
@@ -91,7 +91,7 @@ class PomodoroTimerService : Service() {
         )
         foregroundStarted = true
         lastSignature = NotificationSignature.from(state)
-        acquireWakeLock()
+        updateWakeLock(state)
     }
 
     private fun updateForeground(state: PomodoroUiState) {
@@ -103,6 +103,15 @@ class PomodoroTimerService : Service() {
             foregroundServiceType(),
         )
         foregroundStarted = true
+        updateWakeLock(state)
+    }
+
+    private fun updateWakeLock(state: PomodoroUiState) {
+        if (state.isRunning) {
+            acquireWakeLock()
+        } else {
+            releaseWakeLock()
+        }
     }
 
     private fun foregroundServiceType(): Int =
