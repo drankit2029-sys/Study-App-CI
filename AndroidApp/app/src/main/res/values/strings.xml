@@ -1,4 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Pomodoro</string>
+    <string name="notification_channel_timer">Focus timer</string>
+    <string name="notification_channel_timer_description">Ongoing timer and controls</string>
+    <string name="notification_channel_completion">Session completion</string>
+    <string name="notification_channel_completion_description">Alerts when a focus or break session ends</string>
+    <string name="notification_status_running">Your focus is protected.</string>
+    <string name="notification_status_paused">Paused. Return when you are ready.</string>
+    <string name="notification_action_pause">Pause</string>
+    <string name="notification_action_resume">Resume</string>
+    <string name="notification_action_reset">Reset</string>
+    <string name="notification_action_open">Open</string>
+    <string name="notification_action_start_next">Start next</string>
+    <string name="notification_complete_focus">Focus complete</string>
+    <string name="notification_complete_break">Break complete</string>
+    <string name="notification_phase_complete">SESSION COMPLETE</string>
+    <string name="notification_next_focus">Focus</string>
+    <string name="notification_next_short_break">Short break</string>
+    <string name="notification_next_long_break">Long break</string>
+    <string name="notification_completion_compact">%1$s is ready.</string>
+    <string name="notification_completion_focus">Session %1$d of %2$d complete. %3$s is ready.</string>
+    <string name="notification_completion_long_break">Four focus sessions complete. %1$s is ready.</string>
+    <string name="notification_completion_break">Break finished. %1$s is ready when you are.</string>
+    <string name="notification_footer">A SOFTER STUDY RHYTHM</string>
 </resources>
