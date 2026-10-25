@@ -56,6 +56,7 @@ fun NativeAdCard(modifier: Modifier = Modifier) {
         repeat(LOAD_ATTEMPTS) { attempt ->
             val loaded = loadNativeAd(context)
             if (loaded != null) {
+                Log.d(LOG_TAG, "Native ad loaded")
                 nativeAd = loaded
                 return@LaunchedEffect
             }
@@ -107,7 +108,10 @@ private suspend fun loadNativeAd(context: Context): NativeAd? {
                         override fun onAdFailedToLoad(error: LoadAdError) {
                             if (continuation.isActive) {
                                 continuation.resumeWithException(
-                                    IllegalStateException(error.message),
+                                    IllegalStateException(
+                                        "code=${error.code} domain=${error.domain} " +
+                                            "message=${error.message}",
+                                    ),
                                 )
                             }
                         }

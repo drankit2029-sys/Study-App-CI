@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Notification
 import android.app.NotificationManager
 import android.os.Build
+import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -222,7 +223,25 @@ class PomodoroScreenshotTest {
             }
             Thread.sleep(250L)
         }
-        throw AssertionError("Google test native ad did not load")
+        throw AssertionError(
+            "Google test native ad did not load\n" + nativeAdDiagnostics(),
+        )
+    }
+
+    private fun nativeAdDiagnostics(): String {
+        val commandResult = instrumentation.uiAutomation.executeShellCommand(
+            "logcat -d -v brief -t 3000",
+        )
+        val logcat = ParcelFileDescriptor.AutoCloseInputStream(commandResult)
+            .bufferedReader()
+            .use { it.readText() }
+        val relevant = Regex(
+            """\b(Ads|Ads-Native|NativeAdCard|AdLoader|AdRequest|MobileAds)\b""",
+        )
+        return logcat.lineSequence()
+            .filter { relevant.containsMatchIn(it) }
+            .takeLast(120)
+            .joinToString("\n")
     }
 
     private fun scrollToTop() {
