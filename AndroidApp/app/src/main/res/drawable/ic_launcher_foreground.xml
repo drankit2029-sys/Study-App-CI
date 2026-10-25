@@ -9,10 +9,13 @@
         android:pathData="M54,25a29,29 0,1 0,0 58a29,29 0,1 0,0 -58z" />
     <path
         android:fillColor="#FAF9F4"
-        android:pathData="M51.8,37.5h4.4v18.5h-4.4z" />
+        android:pathData="M51.8,35.5h4.4v13.7h-4.4z" />
     <path
         android:fillColor="#FAF9F4"
-        android:pathData="M54,55l14.5,9.2l-2.5,3.9l-14.5,-9.2z" />
+        android:pathData="M56.904,58.410L68.522,65.671L70.854,61.939L59.236,54.678Z" />
+    <path
+        android:fillColor="#FAF9F4"
+        android:pathData="M50.8,54a3.2,3.2 0,1 0,6.4 0a3.2,3.2 0,1 0,-6.4 0z" />
     <path
         android:fillColor="#B7D9C1"
         android:pathData="M49.8,19.5h8.4v7h-8.4z" />
