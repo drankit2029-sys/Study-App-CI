@@ -240,6 +240,7 @@ class PomodoroScreenshotTest {
         )
         return logcat.lineSequence()
             .filter { relevant.containsMatchIn(it) }
+            .toList()
             .takeLast(120)
             .joinToString("\n")
     }
