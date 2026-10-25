@@ -87,16 +87,16 @@ class PomodoroScreenshotTest {
         scrollToTop()
         capture(device, "01_timer_running.png")
 
-        composeRule.onNodeWithContentDescription("Reset today's sessions")
+        val nativeAd = waitForNativeAd()
+        composeRule.onNodeWithText("AUTO RESET · 12:00 AM")
             .scrollIntoView()
             .assertIsDisplayed()
-        composeRule.onNodeWithText("AUTO RESET · 12:00 AM").assertExists()
+        composeRule.onNodeWithContentDescription("Reset today's sessions").assertExists()
         capture(device, "02_daily_rhythm.png")
 
-        val nativeAd = waitForNativeAd()
         nativeAd.scrollIntoView()
         nativeAd.assertIsDisplayed()
-        Thread.sleep(800L)
+        Thread.sleep(1200L)
         capture(device, "11_native_ad_portrait.png")
 
         composeRule.onNodeWithText("Pause").scrollIntoView().performClick()
@@ -205,7 +205,7 @@ class PomodoroScreenshotTest {
         val nativeAd = waitForNativeAd()
         nativeAd.scrollIntoView()
         nativeAd.assertIsDisplayed()
-        Thread.sleep(800L)
+        Thread.sleep(1200L)
         capture(device, "12_native_ad_landscape.png")
 
         device.setOrientationNatural()
