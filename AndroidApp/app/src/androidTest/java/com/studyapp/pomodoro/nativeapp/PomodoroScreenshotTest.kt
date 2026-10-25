@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -90,6 +91,12 @@ class PomodoroScreenshotTest {
             .assertIsDisplayed()
         composeRule.onNodeWithText("AUTO RESET · 12:00 AM").assertExists()
         capture(device, "02_daily_rhythm.png")
+
+        val nativeAd = waitForNativeAd()
+        nativeAd.scrollIntoView()
+        nativeAd.assertIsDisplayed()
+        Thread.sleep(800L)
+        capture(device, "11_native_ad_portrait.png")
 
         composeRule.onNodeWithText("Pause").scrollIntoView().performClick()
         composeRule.onNodeWithText("Resume").assertIsDisplayed()
@@ -192,8 +199,30 @@ class PomodoroScreenshotTest {
         composeRule.onNodeWithContentDescription("Close alarm settings")
             .scrollIntoView()
             .performClick()
+        composeRule.waitForIdle()
+
+        val nativeAd = waitForNativeAd()
+        nativeAd.scrollIntoView()
+        nativeAd.assertIsDisplayed()
+        Thread.sleep(800L)
+        capture(device, "12_native_ad_landscape.png")
+
         device.setOrientationNatural()
         device.waitForIdle()
+    }
+
+    private fun waitForNativeAd(): SemanticsNodeInteraction {
+        val deadline = System.currentTimeMillis() + 40_000L
+        while (System.currentTimeMillis() < deadline) {
+            val nodes = composeRule
+                .onAllNodesWithContentDescription("Sponsored native ad")
+                .fetchSemanticsNodes()
+            if (nodes.isNotEmpty()) {
+                return composeRule.onNodeWithContentDescription("Sponsored native ad")
+            }
+            Thread.sleep(250L)
+        }
+        throw AssertionError("Google test native ad did not load")
     }
 
     private fun scrollToTop() {

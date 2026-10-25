@@ -24,4 +24,5 @@
     <string name="notification_completion_long_break">Four focus sessions complete. %1$s is ready.</string>
     <string name="notification_completion_break">Break finished. %1$s is ready when you are.</string>
     <string name="notification_footer">A SOFTER STUDY RHYTHM</string>
+    <string name="native_ad_sponsored">SPONSORED</string>
 </resources>

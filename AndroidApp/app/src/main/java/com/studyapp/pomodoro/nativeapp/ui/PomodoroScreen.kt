@@ -96,6 +96,7 @@ import com.studyapp.pomodoro.nativeapp.ui.components.AlarmSettingsDialog
 import com.studyapp.pomodoro.nativeapp.ui.components.BotanicalBranch
 import com.studyapp.pomodoro.nativeapp.ui.components.CompletionDialog
 import com.studyapp.pomodoro.nativeapp.ui.components.ModeTabs
+import com.studyapp.pomodoro.nativeapp.ui.components.NativeAdCard
 import com.studyapp.pomodoro.nativeapp.ui.components.ProgressRing
 import com.studyapp.pomodoro.nativeapp.ui.components.SoftButton
 import com.studyapp.pomodoro.nativeapp.ui.components.SoftButtonVariant
@@ -305,6 +306,8 @@ private fun PortraitContent(
             faceSize = timerFaceSize,
         )
         Spacer(Modifier.height(16.dp))
+        NativeAdCard()
+        Spacer(Modifier.height(16.dp))
         RhythmCard(state = state, onResetDaily = onResetDaily)
         Spacer(Modifier.height(16.dp))
         SettingsCard(state = state, onUpdateSetting = onUpdateSetting)
@@ -366,6 +369,8 @@ private fun LandscapeContent(
                 )
                 Spacer(Modifier.height(10.dp))
                 LandscapeSettingsCard(state = state, onUpdateSetting = onUpdateSetting)
+                Spacer(Modifier.height(10.dp))
+                NativeAdCard()
             }
         }
     }
@@ -415,6 +420,11 @@ private fun TabletLandscapeContent(
             LandscapeSettingsCard(
                 state = state,
                 onUpdateSetting = onUpdateSetting,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            )
+            NativeAdCard(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
