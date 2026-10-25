@@ -79,8 +79,6 @@ fun CompletionDialog(
             "Break finished. Your next ${settings.focus}-minute focus session is ready when you are."
     }
     val confirmLabel = if (completion.next == Phase.Focus) "Start focus" else "Start break"
-    val haptic = LocalHapticFeedback.current
-    val closeInteraction = remember { MutableInteractionSource() }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -93,134 +91,198 @@ fun CompletionDialog(
                 .padding(16.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = 370.dp)
-                    .fillMaxWidth()
-                    .heightIn(max = maxHeight)
-                    .softRaised(Paper, 26.dp, 20.dp)
-                    .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(26.dp))
-                    .verticalScroll(rememberScrollState())
-                    .padding(22.dp),
-            ) {
-                Box(modifier = Modifier.fillMaxWidth()) {
+            val shortLandscape = maxWidth > maxHeight && maxHeight < 560.dp
+            if (shortLandscape) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 560.dp)
+                        .heightIn(max = maxHeight)
+                        .softRaised(Paper, 26.dp, 20.dp)
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.75f),
+                            RoundedCornerShape(26.dp),
+                        )
+                        .padding(18.dp),
+                ) {
+                    CompletionHeading(title = title, onDismiss = onDismiss)
+                    Spacer(Modifier.height(10.dp))
+                    CompletionMessage(message = message)
+                    Spacer(Modifier.height(14.dp))
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(end = 40.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(54.dp)
-                                .background(MintLight, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Check,
-                                contentDescription = null,
-                                tint = Forest,
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
-                        Spacer(Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = title,
-                                color = Ink,
-                                style = MaterialTheme.typography.displaySmall.copy(
-                                    fontSize = 32.sp,
-                                    lineHeight = 34.sp,
-                                    fontWeight = FontWeight.Normal,
-                                ),
-                            )
-                            Text(
-                                text = "You're ready to go.",
-                                color = Muted,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 11.sp,
-                                    letterSpacing = 1.4.sp,
-                                ),
-                            )
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .clickable(
-                                interactionSource = closeInteraction,
-                                indication = LocalIndication.current,
-                                role = Role.Button,
-                            ) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onDismiss()
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Close dialog",
-                            tint = Muted,
-                            modifier = Modifier.size(20.dp),
+                        SoftButton(
+                            label = confirmLabel,
+                            onClick = onStartNext,
+                            trailingIcon = Icons.AutoMirrored.Rounded.ArrowForward,
+                            modifier = Modifier.weight(1f),
+                        )
+                        SoftButton(
+                            label = "Later",
+                            onClick = onDismiss,
+                            variant = SoftButtonVariant.Secondary,
+                            modifier = Modifier.weight(1f),
                         )
                     }
+                    Spacer(Modifier.height(10.dp))
+                    CompletionFooter()
                 }
-                Spacer(Modifier.height(18.dp))
-                Text(
-                    text = message,
-                    color = Muted,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontSize = 13.sp,
-                        lineHeight = 20.sp,
-                    ),
-                )
-                Spacer(Modifier.height(24.dp))
-                SoftButton(
-                    label = confirmLabel,
-                    onClick = onStartNext,
-                    trailingIcon = Icons.AutoMirrored.Rounded.ArrowForward,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(10.dp))
-                SoftButton(
-                    label = "Later",
-                    onClick = onDismiss,
-                    variant = SoftButtonVariant.Secondary,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
+            } else {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 370.dp)
+                        .fillMaxWidth()
+                        .heightIn(max = maxHeight)
+                        .softRaised(Paper, 26.dp, 20.dp)
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.75f),
+                            RoundedCornerShape(26.dp),
+                        )
+                        .verticalScroll(rememberScrollState())
+                        .padding(22.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .width(26.dp)
-                            .height(1.dp)
-                            .background(Stone),
+                    CompletionHeading(title = title, onDismiss = onDismiss)
+                    Spacer(Modifier.height(18.dp))
+                    CompletionMessage(message = message)
+                    Spacer(Modifier.height(24.dp))
+                    SoftButton(
+                        label = confirmLabel,
+                        onClick = onStartNext,
+                        trailingIcon = Icons.AutoMirrored.Rounded.ArrowForward,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "A GENTLE PAUSE",
-                        color = Muted,
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 11.sp,
-                            letterSpacing = 1.8.sp,
-                        ),
+                    Spacer(Modifier.height(10.dp))
+                    SoftButton(
+                        label = "Later",
+                        onClick = onDismiss,
+                        variant = SoftButtonVariant.Secondary,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .width(26.dp)
-                            .height(1.dp)
-                            .background(Stone),
-                    )
+                    Spacer(Modifier.height(12.dp))
+                    CompletionFooter()
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CompletionHeading(
+    title: String,
+    onDismiss: () -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    val closeInteraction = remember { MutableInteractionSource() }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 40.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(MintLight, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = Forest,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Ink,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontSize = 32.sp,
+                        lineHeight = 34.sp,
+                        fontWeight = FontWeight.Normal,
+                    ),
+                )
+                Text(
+                    text = "You're ready to go.",
+                    color = Muted,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 11.sp,
+                        letterSpacing = 1.4.sp,
+                    ),
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(48.dp)
+                .clip(CircleShape)
+                .clickable(
+                    interactionSource = closeInteraction,
+                    indication = LocalIndication.current,
+                    role = Role.Button,
+                ) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onDismiss()
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Close,
+                contentDescription = "Close dialog",
+                tint = Muted,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompletionMessage(message: String) {
+    Text(
+        text = message,
+        color = Muted,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontSize = 13.sp,
+            lineHeight = 20.sp,
+        ),
+    )
+}
+
+@Composable
+private fun CompletionFooter() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(26.dp)
+                .height(1.dp)
+                .background(Stone),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "A GENTLE PAUSE",
+            color = Muted,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 11.sp,
+                letterSpacing = 1.8.sp,
+            ),
+        )
+        Spacer(Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .width(26.dp)
+                .height(1.dp)
+                .background(Stone),
+        )
     }
 }
