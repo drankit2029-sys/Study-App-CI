@@ -50,6 +50,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -68,6 +69,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
@@ -77,6 +79,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -186,58 +189,88 @@ fun PomodoroScreen(
         contentAlignment = Alignment.TopCenter,
     ) {
         val isLandscape = maxWidth > maxHeight
-        val useTwoPane = isLandscape && maxWidth >= 700.dp && maxHeight >= 320.dp
-        BotanicalBranch(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = if (isLandscape) 44.dp else 52.dp, y = (-18).dp)
-                .size(if (isLandscape) 112.dp else 132.dp),
-        )
-        if (useTwoPane) {
-            LandscapeContent(
-                state = state,
-                onToggle = onToggle,
-                onReset = onReset,
-                onSelectPhase = onSelectPhase,
-                onUpdateSetting = onUpdateSetting,
-                onResetDaily = onResetDaily,
-                onOpenAlarmSettings = openAlarmSettings,
-            )
-        } else {
-            PortraitContent(
-                state = state,
-                onToggle = onToggle,
-                onReset = onReset,
-                onSelectPhase = onSelectPhase,
-                onUpdateSetting = onUpdateSetting,
-                onResetDaily = onResetDaily,
-                onOpenAlarmSettings = openAlarmSettings,
-            )
+        val isTablet = minOf(maxWidth, maxHeight) >= 600.dp
+        val isCompactPortrait = !isLandscape && maxWidth < 390.dp
+        val isCompactLandscape = isLandscape && maxWidth < 760.dp && maxHeight < 440.dp
+        val useTabletLandscape = isTablet && isLandscape && maxHeight >= 680.dp
+        val useTwoPane = isLandscape && !useTabletLandscape &&
+            maxWidth >= 600.dp && maxHeight >= 320.dp
+        val uiScale = when {
+            isTablet -> 1.15f
+            isCompactLandscape -> 0.84f
+            isCompactPortrait -> 0.86f
+            else -> 1f
         }
-    }
+        val screenDensity = LocalDensity.current
 
-    if (showAlarmSettings && state.completion == null) {
-        AlarmSettingsDialog(
-            settings = state.alarm,
-            onDismiss = {
-                onStopAlarm()
-                showAlarmSettings = false
-            },
-            onEnabledChange = onUpdateAlarmEnabled,
-            onSoundClick = openRingtonePicker,
-            onVibrationChange = onUpdateAlarmVibration,
-            onDurationChange = onUpdateAlarmDuration,
-            onPreview = onPreviewAlarm,
-        )
-    }
+        CompositionLocalProvider(
+            LocalDensity provides Density(
+                density = screenDensity.density * uiScale,
+                fontScale = screenDensity.fontScale,
+            ),
+        ) {
+            BotanicalBranch(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = if (isLandscape) 44.dp else 52.dp, y = (-18).dp)
+                    .size(if (isLandscape) 112.dp else 132.dp),
+            )
+            when {
+                useTabletLandscape -> TabletLandscapeContent(
+                    state = state,
+                    onToggle = onToggle,
+                    onReset = onReset,
+                    onSelectPhase = onSelectPhase,
+                    onUpdateSetting = onUpdateSetting,
+                    onResetDaily = onResetDaily,
+                    onOpenAlarmSettings = openAlarmSettings,
+                )
+                useTwoPane -> LandscapeContent(
+                    state = state,
+                    onToggle = onToggle,
+                    onReset = onReset,
+                    onSelectPhase = onSelectPhase,
+                    onUpdateSetting = onUpdateSetting,
+                    onResetDaily = onResetDaily,
+                    onOpenAlarmSettings = openAlarmSettings,
+                )
+                else -> PortraitContent(
+                    state = state,
+                    onToggle = onToggle,
+                    onReset = onReset,
+                    onSelectPhase = onSelectPhase,
+                    onUpdateSetting = onUpdateSetting,
+                    onResetDaily = onResetDaily,
+                    onOpenAlarmSettings = openAlarmSettings,
+                    maxContentWidth = if (isTablet) 720.dp else 560.dp,
+                    timerFaceSize = if (isTablet) 360.dp else 258.dp,
+                )
+            }
 
-    state.completion?.let { completion ->
-        CompletionDialog(
-            completion = completion,
-            settings = state.settings,
-            onDismiss = onDismissCompletion,
-            onStartNext = onStartNext,
-        )
+            if (showAlarmSettings && state.completion == null) {
+                AlarmSettingsDialog(
+                    settings = state.alarm,
+                    onDismiss = {
+                        onStopAlarm()
+                        showAlarmSettings = false
+                    },
+                    onEnabledChange = onUpdateAlarmEnabled,
+                    onSoundClick = openRingtonePicker,
+                    onVibrationChange = onUpdateAlarmVibration,
+                    onDurationChange = onUpdateAlarmDuration,
+                    onPreview = onPreviewAlarm,
+                )
+            }
+
+            state.completion?.let { completion ->
+                CompletionDialog(
+                    completion = completion,
+                    settings = state.settings,
+                    onDismiss = onDismissCompletion,
+                    onStartNext = onStartNext,
+                )
+            }
+        }
     }
 }
 
@@ -250,10 +283,12 @@ private fun PortraitContent(
     onUpdateSetting: (Phase, Int) -> Unit,
     onResetDaily: () -> Unit,
     onOpenAlarmSettings: () -> Unit,
+    maxContentWidth: Dp,
+    timerFaceSize: Dp,
 ) {
     Column(
         modifier = Modifier
-            .widthIn(max = 560.dp)
+            .widthIn(max = maxContentWidth)
             .fillMaxHeight()
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
@@ -267,6 +302,7 @@ private fun PortraitContent(
             onToggle = onToggle,
             onReset = onReset,
             onSelectPhase = onSelectPhase,
+            faceSize = timerFaceSize,
         )
         Spacer(Modifier.height(16.dp))
         RhythmCard(state = state, onResetDaily = onResetDaily)
@@ -314,6 +350,7 @@ private fun LandscapeContent(
                     onReset = onReset,
                     onSelectPhase = onSelectPhase,
                     landscape = true,
+                    faceSize = 280.dp,
                 )
             }
             Column(
@@ -330,6 +367,58 @@ private fun LandscapeContent(
                 Spacer(Modifier.height(10.dp))
                 LandscapeSettingsCard(state = state, onUpdateSetting = onUpdateSetting)
             }
+        }
+    }
+}
+
+@Composable
+private fun TabletLandscapeContent(
+    state: PomodoroUiState,
+    onToggle: () -> Unit,
+    onReset: () -> Unit,
+    onSelectPhase: (Phase) -> Unit,
+    onUpdateSetting: (Phase, Int) -> Unit,
+    onResetDaily: () -> Unit,
+    onOpenAlarmSettings: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .widthIn(max = 1480.dp)
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 28.dp, vertical = 16.dp),
+    ) {
+        LandscapeHeader(onOpenAlarmSettings = onOpenAlarmSettings)
+        Spacer(Modifier.height(12.dp))
+        TimerCard(
+            state = state,
+            onToggle = onToggle,
+            onReset = onReset,
+            onSelectPhase = onSelectPhase,
+            landscape = true,
+            faceSize = 320.dp,
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            RhythmCard(
+                state = state,
+                onResetDaily = onResetDaily,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            )
+            LandscapeSettingsCard(
+                state = state,
+                onUpdateSetting = onUpdateSetting,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            )
         }
     }
 }
@@ -449,6 +538,7 @@ private fun TimerCard(
     onReset: () -> Unit,
     onSelectPhase: (Phase) -> Unit,
     landscape: Boolean = false,
+    faceSize: Dp = 258.dp,
 ) {
     if (landscape) {
         Row(
@@ -462,7 +552,7 @@ private fun TimerCard(
             TimerFace(
                 state = state,
                 modifier = Modifier.weight(1.08f),
-                maxFaceSize = 280.dp,
+                maxFaceSize = faceSize,
             )
             Column(modifier = Modifier.weight(0.92f)) {
                 SectionLabel(index = "01", title = "FOCUS TIMER")
@@ -508,7 +598,7 @@ private fun TimerCard(
                 onSelect = onSelectPhase,
             )
             Spacer(Modifier.height(18.dp))
-            TimerFace(state)
+            TimerFace(state, maxFaceSize = faceSize)
             Spacer(Modifier.height(18.dp))
             SoftButton(
                 label = state.actionLabel,
@@ -666,6 +756,7 @@ private fun RhythmCard(
     state: PomodoroUiState,
     onResetDaily: () -> Unit,
     compact: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val goalCount = minOf(state.completedFocus, SessionsPerCycle)
     val goalProgress = goalCount.toFloat() / SessionsPerCycle
@@ -676,7 +767,7 @@ private fun RhythmCard(
     )
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .softRaised(Paper, if (compact) 22.dp else 24.dp, if (compact) 6.dp else 7.dp)
             .padding(if (compact) 14.dp else 20.dp),
@@ -924,10 +1015,11 @@ private fun SettingsCard(
 private fun LandscapeSettingsCard(
     state: PomodoroUiState,
     onUpdateSetting: (Phase, Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val enabled = !state.isRunning
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .softRaised(Paper, 22.dp, 6.dp)
             .padding(14.dp),
